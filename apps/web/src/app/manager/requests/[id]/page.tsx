@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { activeWarrantiesForCustomer, getDb } from "@exactpoint/db";
 import { serviceRequestDetail } from "@/lib/manager/queries";
 import { recommendationsForRequest } from "@/lib/manager/recommendations";
 import { activeTechnicians } from "@/lib/manager/queries";
@@ -18,6 +19,9 @@ export default async function RequestDetailPage({
   const { request, customer, address, serviceType, photos } = detail;
   const recs = await recommendationsForRequest(id);
   const team = await activeTechnicians();
+  const activeWarranties = customer
+    ? await activeWarrantiesForCustomer(getDb(), customer.id)
+    : [];
 
   const preferred = Array.isArray(request.preferredWindows)
     ? (request.preferredWindows as { label?: string }[])
@@ -38,6 +42,25 @@ export default async function RequestDetailPage({
           {request.status}
         </span>
       </div>
+
+      {activeWarranties.length > 0 && (
+        <div className="rounded-xl border-2 border-point bg-point/5 p-4 text-sm">
+          <p className="font-bold text-point">Possible warranty callback</p>
+          <p className="mt-1 text-navy">
+            This customer has {activeWarranties.length} active labor{" "}
+            {activeWarranties.length === 1 ? "warranty" : "warranties"}:
+            {activeWarranties.map((w) => (
+              <span key={w.id} className="block text-slate">
+                • {w.issueRepaired} (through {w.endDate})
+              </span>
+            ))}
+          </p>
+          <p className="mt-1 text-xs text-slate">
+            You decide whether this issue qualifies — unrelated failures are
+            separate problems (spec §41).
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-xl border border-line bg-white p-5">

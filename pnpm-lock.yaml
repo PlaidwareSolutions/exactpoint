@@ -111,6 +111,12 @@ importers:
       '@exactpoint/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@exactpoint/domain':
+        specifier: workspace:^
+        version: link:../../packages/domain
+      '@exactpoint/notifications':
+        specifier: workspace:^
+        version: link:../../packages/notifications
       pg-boss:
         specifier: ^12.27.0
         version: 12.27.0

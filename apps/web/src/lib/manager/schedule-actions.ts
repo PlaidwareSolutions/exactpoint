@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import {
+  enqueueEmail,
   getDb,
   reassignAppointment,
   ScheduleConflictError,
@@ -100,6 +101,26 @@ export async function assignRequest(input: unknown): Promise<ActionResult> {
       return { ok: false, error: "That technician was just booked for this time." };
     }
     throw err;
+  }
+
+  if (detail.customer?.email) {
+    const windowLabel = new Intl.DateTimeFormat("en-US", {
+      timeZone: BUSINESS.timezone,
+      weekday: "long",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(start);
+    await enqueueEmail(getDb(), {
+      template: "appointment_confirmed",
+      recipient: detail.customer.email,
+      payload: {
+        firstName: detail.customer.firstName,
+        reference: detail.request.reference,
+        windowLabel,
+      },
+    });
   }
   revalidatePath("/manager");
   return { ok: true, warnings: check.warnings };

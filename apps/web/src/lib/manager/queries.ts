@@ -46,6 +46,8 @@ export async function appointmentsForDay(ymd: string) {
       city: customerAddresses.city,
       zoneId: customerAddresses.zoneId,
       zoneName: serviceZones.name,
+      latitude: customerAddresses.latitude,
+      longitude: customerAddresses.longitude,
       serviceName: serviceTypes.name,
       workOrderId: workOrders.id,
     })

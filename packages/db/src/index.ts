@@ -19,6 +19,16 @@ export {
   updateAppointmentStatus,
 } from "./operations/schedule";
 export {
+  activeWarrantiesForCustomer,
+  addWorkOrderNote,
+  appointmentDetail,
+  completeAppointment,
+  enqueueEmail,
+  markNotification,
+  pendingNotifications,
+  technicianDayJobs,
+} from "./operations/jobs";
+export {
   toTstzRange,
   toEwktPoint,
   tstzrange,

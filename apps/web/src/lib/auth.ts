@@ -26,6 +26,12 @@ export const auth = betterAuth({
   }),
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
+  trustedOrigins: [
+    "https://exactpointrepairs.com",
+    "https://www.exactpointrepairs.com",
+    "https://web-production-6b592.up.railway.app",
+    "http://localhost:3000",
+  ],
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,

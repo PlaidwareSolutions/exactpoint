@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import pg from "pg";
 
 /**
@@ -36,7 +36,7 @@ test.beforeAll(async () => {
 });
 
 /** Clicks Sign in with a retry — hydration on mobile can lag the first click. */
-async function submitLogin(page: import("@playwright/test").Page) {
+async function submitLogin(page: Page) {
   for (let attempt = 0; attempt < 3; attempt++) {
     await page.getByRole("button", { name: "Sign in" }).click();
     try {
@@ -49,7 +49,7 @@ async function submitLogin(page: import("@playwright/test").Page) {
   throw new Error("Login did not complete");
 }
 
-async function ownerLogin(page: import("@playwright/test").Page) {
+async function ownerLogin(page: Page) {
   await page.goto("/login");
   await page.getByLabel("Email").fill("info@exactpointrepairs.com");
   await page.getByLabel("Password").fill(process.env.SEED_OWNER_PASSWORD ?? "");

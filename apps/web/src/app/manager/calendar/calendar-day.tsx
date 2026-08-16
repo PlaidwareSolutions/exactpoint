@@ -134,9 +134,10 @@ export function CalendarDay({
                       draggable
                       onDragStart={() => setDragging(a.appointmentId)}
                       onDragEnd={() => setDragging(null)}
+                      onClick={() => router.push(`/manager/jobs/${a.appointmentId}`)}
                       className="absolute inset-x-1 cursor-grab overflow-hidden rounded-lg border-l-4 bg-mist px-2 py-1 text-xs shadow-sm active:cursor-grabbing"
                       style={{ top: Math.max(top, 0) + 2, height, borderLeftColor: t.color }}
-                      title={`${a.label} — drag to move`}
+                      title={`${a.label} — click to open, drag to move`}
                     >
                       <p className="truncate font-bold text-navy">{a.label}</p>
                       <p className="truncate text-slate">{a.sub}</p>
