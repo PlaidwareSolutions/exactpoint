@@ -14,6 +14,7 @@ const NAV = [
   { href: "/manager/customers", label: "Customers" },
   { href: "/manager/team", label: "Team" },
   { href: "/manager/settings", label: "Settings" },
+  { href: "/help", label: "Help" },
 ];
 
 export default async function ManagerLayout({ children }: { children: React.ReactNode }) {

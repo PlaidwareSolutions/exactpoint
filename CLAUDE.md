@@ -13,6 +13,7 @@ The authoritative product requirements live in [docs/PRODUCT_SPEC.md](docs/PRODU
 6. **Keep `packages/scheduling` pure** — no framework, DB, or vendor imports. External providers (maps, email, storage) stay behind the interfaces in `packages/maps` / `packages/notifications`.
 7. **Authorization is server-side** — `requireOwner()` / `requireTechnician()` in `apps/web/src/lib/session.ts` on every protected page/action; hiding UI is never the mechanism.
 8. Technicians are **deactivated, never deleted** — historical assignments must survive.
+9. **Every user-facing feature change updates the owner handbook in the same breath.** `docs/handbook.html` is the single source for three surfaces: the in-app `/help` page (served from the file at runtime — a web deploy ships it) and the shareable artifact (republish `docs/handbook.html` to keep its existing URL). A feature PR that changes what the owner sees or does is incomplete until the handbook reflects it.
 
 ## Environment
 

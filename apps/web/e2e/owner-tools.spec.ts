@@ -81,6 +81,20 @@ test("owner books a phone customer into the assign flow", async ({ page }) => {
   await expect(page.getByText("Phone Intake")).toBeVisible();
 });
 
+test("help page serves the handbook to signed-in users only", async ({ page }) => {
+  // Signed out → redirected to login.
+  await page.goto("/help");
+  await expect(page).toHaveURL(/\/login/);
+
+  await login(page, "info@exactpointrepairs.com", process.env.SEED_OWNER_PASSWORD ?? "");
+  await page.goto("/help");
+  await expect(page.getByText("The ExactPoint Handbook")).toBeVisible();
+  await expect(page.getByRole("link", { name: "← Back to ExactPoint" })).toHaveAttribute(
+    "href",
+    "/manager",
+  );
+});
+
 test("blocked time renders on the calendar", async ({ page }, testInfo) => {
   await login(page, "info@exactpointrepairs.com", process.env.SEED_OWNER_PASSWORD ?? "");
 

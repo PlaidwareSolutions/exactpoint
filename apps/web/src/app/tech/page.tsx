@@ -48,6 +48,10 @@ export default async function TechTodayPage() {
             <Link href="/account/password" className="font-semibold text-point">
               password
             </Link>
+            {" · "}
+            <a href="/help" className="font-semibold text-point">
+              help
+            </a>
           </p>
         </div>
         <SignOutButton />
