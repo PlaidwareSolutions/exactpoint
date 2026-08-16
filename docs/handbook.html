@@ -1,0 +1,364 @@
+<title>ExactPoint Handbook</title>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --ink: #16233b;
+    --muted: #5b6b85;
+    --line: #dde3ec;
+    --accent: #f26a21;
+    --accent-soft: rgba(242, 106, 33, 0.08);
+    --good: #047857;
+    --good-soft: #ecfdf5;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #0e1626;
+      --surface: #182338;
+      --ink: #e8edf5;
+      --muted: #93a1b8;
+      --line: #2a3752;
+      --accent-soft: rgba(242, 106, 33, 0.14);
+      --good: #34d399;
+      --good-soft: rgba(4, 120, 87, 0.2);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1626;
+    --surface: #182338;
+    --ink: #e8edf5;
+    --muted: #93a1b8;
+    --line: #2a3752;
+    --accent-soft: rgba(242, 106, 33, 0.14);
+    --good: #34d399;
+    --good-soft: rgba(4, 120, 87, 0.2);
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 1rem 5rem;
+  }
+  .wrap { max-width: 46rem; margin: 0 auto; }
+  header.masthead {
+    display: flex; align-items: center; gap: 0.9rem;
+    padding: 2.2rem 0 1.4rem; border-bottom: 1px solid var(--line);
+  }
+  .masthead h1 { font-size: 1.7rem; font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+  .masthead p { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.95rem; }
+  .eyebrow {
+    color: var(--accent); font-size: 0.75rem; font-weight: 800;
+    letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 0.3rem;
+  }
+  h2 {
+    font-size: 1.45rem; font-weight: 800; margin: 0 0 0.8rem;
+    letter-spacing: -0.01em; text-wrap: balance;
+  }
+  h3 { font-size: 1.05rem; font-weight: 800; margin: 1.4rem 0 0.4rem; }
+  p { margin: 0.7rem 0; }
+  section.chapter { padding: 2.2rem 0 0.6rem; border-bottom: 1px solid var(--line); scroll-margin-top: 1rem; }
+  a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  a:hover, a:focus-visible { text-decoration: underline; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+  .toc {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    gap: 0.5rem; padding: 1.4rem 0; list-style: none; margin: 0;
+  }
+  .toc a {
+    display: block; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 0.6rem 0.8rem; color: var(--ink);
+    font-weight: 600; font-size: 0.9rem;
+  }
+  .toc a b { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 0.4rem; }
+  .toc a:hover { border-color: var(--accent); text-decoration: none; }
+  ol.steps { list-style: none; counter-reset: step; margin: 1rem 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  ol.steps > li {
+    counter-increment: step; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 0.7rem 0.9rem 0.7rem 2.9rem; position: relative; font-size: 0.97rem;
+  }
+  ol.steps > li::before {
+    content: counter(step); position: absolute; left: 0.8rem; top: 0.72rem;
+    width: 1.45rem; height: 1.45rem; border-radius: 50%;
+    background: var(--ink); color: var(--bg); font-weight: 800; font-size: 0.8rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .callout {
+    border-left: 4px solid var(--accent); background: var(--accent-soft);
+    border-radius: 0 10px 10px 0; padding: 0.8rem 1rem; margin: 1.1rem 0; font-size: 0.97rem;
+  }
+  .callout strong:first-child { color: var(--accent); }
+  .note {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 0.8rem 1rem; margin: 1.1rem 0; font-size: 0.94rem; color: var(--muted);
+  }
+  .btn-name {
+    display: inline-block; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 7px; padding: 0.05rem 0.5rem; font-weight: 700; font-size: 0.9em; white-space: nowrap;
+  }
+  .url { font-weight: 700; color: var(--ink); }
+  .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+  ul { padding-left: 1.2rem; }
+  li { margin: 0.25rem 0; }
+  .ok { color: var(--good); font-weight: 700; }
+  footer { padding: 2rem 0; color: var(--muted); font-size: 0.85rem; }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <svg width="52" height="52" viewBox="0 0 120 120" aria-hidden="true">
+      <rect x="6" y="6" width="108" height="108" rx="26" fill="#16233B"/>
+      <g stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" fill="none">
+        <line x1="44" y1="33" x2="44" y2="87"/><line x1="44" y1="33" x2="72" y2="33"/>
+        <line x1="44" y1="60" x2="64" y2="60"/><line x1="44" y1="87" x2="72" y2="87"/>
+        <path d="M72 33 a13.5 13.5 0 0 1 0 27 L64 60"/>
+      </g>
+      <circle cx="71" cy="46.5" r="6" fill="#F26A21"/>
+    </svg>
+    <div>
+      <h1>The ExactPoint Handbook</h1>
+      <p>How your system works, and how to run your day with it.</p>
+    </div>
+  </header>
+
+  <nav aria-label="Chapters">
+    <ul class="toc">
+      <li><a href="#what"><b>1</b>What ExactPoint is</a></li>
+      <li><a href="#signin"><b>2</b>Signing in &amp; your password</a></li>
+      <li><a href="#customer"><b>3</b>What your customer sees</a></li>
+      <li><a href="#today"><b>4</b>Your morning: Today</a></li>
+      <li><a href="#requests"><b>5</b>Booking the work</a></li>
+      <li><a href="#calendar"><b>6</b>The Calendar</a></li>
+      <li><a href="#routes"><b>7</b>Routes &amp; the Map</a></li>
+      <li><a href="#job"><b>8</b>Running a job</a></li>
+      <li><a href="#money"><b>9</b>Money: quotes &amp; invoices</a></li>
+      <li><a href="#warranty"><b>10</b>The warranty</a></li>
+      <li><a href="#team"><b>11</b>Your team</a></li>
+      <li><a href="#settings"><b>12</b>Settings</a></li>
+      <li><a href="#emails"><b>13</b>Emails customers get</a></li>
+      <li><a href="#statuses"><b>14</b>Status cheat-sheet</a></li>
+      <li><a href="#help"><b>15</b>If something looks wrong</a></li>
+    </ul>
+  </nav>
+
+  <section class="chapter" id="what">
+    <p class="eyebrow">Chapter 1</p>
+    <h2>What ExactPoint is</h2>
+    <p>Your system is one product with three doors:</p>
+    <ul>
+      <li><strong>The website</strong> — <span class="url">exactpointrepairs.com</span>. Customers find you, read about your services, see your real work, and book appointments online — day or night, without calling.</li>
+      <li><strong>The Service Manager</strong> — <span class="url">exactpointrepairs.com/manager</span>. Your office. Only you can enter it. Every request, customer, appointment, technician, quote, and invoice lives here.</li>
+      <li><strong>The technician app</strong> — <span class="url">exactpointrepairs.com/tech</span>. What you and any technician use in the field, on a phone: today's jobs, navigate, call the customer, take photos, mark the job done.</li>
+    </ul>
+    <div class="callout">
+      <strong>The one promise the system always keeps:</strong> no technician can ever be booked in two places at the same time. Not by a customer, not by you by accident, not by two customers clicking at the same moment. The database itself refuses. Two <em>different</em> technicians at the same time is fine — that's a busy day, not a conflict.
+    </div>
+  </section>
+
+  <section class="chapter" id="signin">
+    <p class="eyebrow">Chapter 2</p>
+    <h2>Signing in &amp; your password</h2>
+    <ol class="steps">
+      <li>Go to <span class="url">exactpointrepairs.com</span> and scroll to the bottom. Tap <span class="btn-name">Team Sign-in</span>.</li>
+      <li>Email: <strong>info@exactpointrepairs.com</strong>. Password: the one you set. You land on your Manager dashboard.</li>
+      <li>Forgot it? Tap <span class="btn-name">Forgot password?</span> on the sign-in page. A reset link comes to your email within a few minutes (it expires after 1 hour).</li>
+      <li>To change your password anytime: Manager → <span class="btn-name">Settings</span> → <span class="btn-name">Password</span>.</li>
+    </ol>
+    <p class="note">Technicians sign in the same way with their own accounts and see <em>only their own jobs</em> — never your full customer list, money, or settings. Emails sent to info@exactpointrepairs.com are forwarded to your inbox automatically.</p>
+  </section>
+
+  <section class="chapter" id="customer">
+    <p class="eyebrow">Chapter 3</p>
+    <h2>What your customer sees</h2>
+    <p>Knowing their side helps you trust yours. A customer who books online:</p>
+    <ol class="steps">
+      <li>Picks the appliance or HVAC problem and describes it — they can add photos of the machine and its model sticker.</li>
+      <li>Enters their address. The system checks it against Google's records, finds the exact rooftop, and quietly works out which part of Houston it's in.</li>
+      <li>Sees appointment windows that are <em>real</em> — the system already checked who on your team has the skill, the working hours, and enough driving time to get there. Customers never see technician names.</li>
+      <li>Must tick a box acknowledging your <strong>$80 diagnostic fee policy</strong> before submitting. It's in writing, every time.</li>
+      <li>Gets a reference number like <strong>EP-1052</strong> on screen and a confirmation email. Their chosen window is held for them, pending your confirmation.</li>
+    </ol>
+    <p>On your side, that booking appears instantly in <span class="btn-name">Requests</span> and on your Today screen.</p>
+  </section>
+
+  <section class="chapter" id="today">
+    <p class="eyebrow">Chapter 4</p>
+    <h2>Your morning: the Today screen</h2>
+    <p>Open <span class="url">/manager</span> with your coffee. Top row of numbers:</p>
+    <ul>
+      <li><strong>Appointments</strong> — today's booked visits.</li>
+      <li><strong>In progress</strong> — jobs where someone is en route, arrived, or working right now.</li>
+      <li><strong>Techs working</strong> — how many people have jobs today.</li>
+      <li><strong>New requests</strong> — bookings waiting for you to schedule. Orange means "look at me."</li>
+      <li><strong>Emergencies</strong> — customers who marked their request urgent.</li>
+      <li><strong>Needs reassignment</strong> — jobs whose technician was deactivated, or that lost their assignment.</li>
+    </ul>
+    <p>Below that, <strong>Needs attention</strong> lists each new request with a <span class="btn-name">Schedule →</span> shortcut, then <strong>Today's schedule</strong> shows every visit in time order with its status. This screen is your control tower — if it's calm, your day is handled.</p>
+  </section>
+
+  <section class="chapter" id="requests">
+    <p class="eyebrow">Chapter 5</p>
+    <h2>Booking the work</h2>
+
+    <h3>A. A request came in from the website</h3>
+    <ol class="steps">
+      <li>Open <span class="btn-name">Requests</span> (or tap it from Today). New ones are under the <em>new</em> tab.</li>
+      <li>Open the request. You'll see the problem, any photos the customer sent, their contact, the address with its zone, and the windows they preferred. If this customer has an active warranty with you, a bright <strong>Possible warranty callback</strong> banner appears — decide yourself whether the new issue is the same repair.</li>
+      <li>Look at <strong>Recommended</strong>. The system ranks technician + time options and tells you <em>why</em> each one — "2 existing jobs in the same zone that day", "≈12 min from the nearest job", "adds ≈31 min of driving". Higher score = less windshield time and a tighter day.</li>
+      <li>Tap <span class="btn-name">Assign</span> on the option you like. Done — the appointment is booked, the customer gets a confirmation email, and it appears on the Calendar.</li>
+      <li>Don't like the suggestions? Use <strong>Manual override</strong> below them: pick any technician and time yourself. The system still refuses impossible choices (wrong skill, double-booked, not enough driving time) but otherwise trusts you — and records that it was your call.</li>
+      <li>Junk or a duplicate? <span class="btn-name">Decline</span> or <span class="btn-name">Spam</span>.</li>
+    </ol>
+
+    <h3>B. A customer called you on the phone</h3>
+    <ol class="steps">
+      <li>Manager → <span class="btn-name">＋ New Booking</span>.</li>
+      <li>Type their phone number first. If they've used you before, their name and addresses appear — tap to reuse them. History stays connected.</li>
+      <li>Fill in the service, the problem in their words, and the address (it gets verified the same way as online bookings). Tick <em>urgent</em> if it is.</li>
+      <li>Mention the $80 diagnostic fee on the call — the form records that you did.</li>
+      <li>Tap <span class="btn-name">Create booking → pick a time</span>. You land straight on the recommendations screen — assign exactly as above, while they're still on the line if you like.</li>
+    </ol>
+    <div class="callout">
+      <strong>The $80 rule, in one line:</strong> the diagnostic/service-call fee is owed only when you diagnose and the customer <em>declines</em> the repair. Approve the quote and the fee is waived. The system applies this automatically when you invoice (Chapter 9).
+    </div>
+  </section>
+
+  <section class="chapter" id="calendar">
+    <p class="eyebrow">Chapter 6</p>
+    <h2>The Calendar</h2>
+    <p>Manager → <span class="btn-name">Calendar</span>. Each technician gets a column ("lane") in their own color, 7 AM to 7 PM. Every block is a job; gray hatched areas are time off or blocked time — protected, nothing can be booked there.</p>
+    <ul>
+      <li><strong>Open a job:</strong> click its block.</li>
+      <li><strong>Move a job (same day):</strong> drag its block to another time or another technician's lane. If the move would double-book someone or the drive is impossible, it bounces back with the reason.</li>
+      <li><strong>Move a job to another day:</strong> open the job → <strong>Reschedule</strong> → pick the new date/time (and technician if you want). Call the customer first — the system moves the window with the job.</li>
+      <li><strong>Block time:</strong> the <span class="btn-name">Block time</span> button — pick one technician or the whole company, a start and end, and a reason (supplier run, doctor, holiday). Blocked time disappears from what customers can book immediately.</li>
+      <li><strong>Week view:</strong> one tap switches to a 7-day grid — jobs per technician per day, with the zones they're in. Great for spotting a lopsided week.</li>
+    </ul>
+  </section>
+
+  <section class="chapter" id="routes">
+    <p class="eyebrow">Chapter 7</p>
+    <h2>Routes &amp; the Map</h2>
+    <p><span class="btn-name">Routes</span> shows each technician's day as a stop list with real Houston driving times between stops. When reordering the visits would save meaningful driving, an <strong>Optimize Day</strong> suggestion appears with the minutes saved — tap <span class="btn-name">Accept optimization</span> to make that the plan. It never changes the time windows customers were promised; it only changes visit order.</p>
+    <p><span class="btn-name">Map</span> puts the day on a Houston map — numbered pins in each technician's color, connected in visit order. Tap a pin for the job; the unassigned list sits underneath. <span class="btn-name">Area View</span> shows the coming week as jobs-per-zone-per-day — scattered single jobs across town are money burned on gas, and this view makes them visible.</p>
+  </section>
+
+  <section class="chapter" id="job">
+    <p class="eyebrow">Chapter 8</p>
+    <h2>Running a job (the technician app)</h2>
+    <p>On the phone, <span class="url">/tech</span> shows today's jobs in order. Opening one gives two big buttons — <span class="btn-name">Call customer</span> and <span class="btn-name">Navigate</span> — plus the problem description and any customer photos. The workflow is four taps across the visit:</p>
+    <ol class="steps">
+      <li><span class="btn-name">En route</span> when driving there.</li>
+      <li><span class="btn-name">Arrived</span> at the door.</li>
+      <li><span class="btn-name">Start</span> when work begins. Add notes ("drain pump clogged, cleared and tested") and photos — before, the model/serial sticker, after. These live with the job forever.</li>
+      <li><span class="btn-name">Complete job…</span> — write what was repaired. This one matters: it closes the job <em>and automatically starts the 2-month labor warranty</em> on that specific repair. The customer gets a completion email.</li>
+    </ol>
+    <p class="note">You see every status change live in the Manager. Technicians can only open jobs assigned to them.</p>
+  </section>
+
+  <section class="chapter" id="money">
+    <p class="eyebrow">Chapter 9</p>
+    <h2>Money: quotes &amp; invoices</h2>
+    <p>Open any job in the Manager and find <strong>Estimate &amp; invoice</strong>:</p>
+    <ol class="steps">
+      <li>Add lines — a part, labor, anything — with quantity and price. Subtotal, tax (8.25% unless you change it), and total calculate live. <span class="btn-name">Save estimate</span>.</li>
+      <li>Present it to the customer, then record their answer: <span class="btn-name">Customer approved</span> or <span class="btn-name">Customer declined</span>.</li>
+      <li>The invoice writes itself: <strong>approved</strong> → quote + tax, $80 fee waived. <strong>Declined</strong> → an invoice for exactly the $80 diagnostic fee. Every invoice gets a number like <strong>INV-1017</strong>.</li>
+      <li>When they pay, tap <span class="btn-name">Paid by zelle</span> / <span class="btn-name">cash</span> / <span class="btn-name">check</span>. A receipt email goes out, and the invoice is marked paid.</li>
+      <li>Need paper? Open the invoice number for a clean printable page with your logo.</li>
+    </ol>
+    <p class="note">A decision is final — an estimate can't be flipped from approved to declined later, so record it only once the customer has actually said the word.</p>
+  </section>
+
+  <section class="chapter" id="warranty">
+    <p class="eyebrow">Chapter 10</p>
+    <h2>The warranty</h2>
+    <p>Completing a job records a <strong>2-month labor warranty</strong> on the <em>specific repair performed</em> — what was fixed, the part or area, the dates, and who did the work.</p>
+    <p>When that customer contacts you again while a warranty is active, their request shows the <strong>Possible warranty callback</strong> banner with the covered repair listed. The system flags — <em>you</em> decide. If the oven you fixed for not heating now has a broken light, that's a new job, not a callback. The banner just makes sure you're never surprised.</p>
+  </section>
+
+  <section class="chapter" id="team">
+    <p class="eyebrow">Chapter 11</p>
+    <h2>Your team</h2>
+    <p>Manager → <span class="btn-name">Team</span>. When you hire:</p>
+    <ol class="steps">
+      <li><span class="btn-name">Add Technician</span> — name, mobile, email, a lane color for the calendar, and whether they take emergency calls.</li>
+      <li><strong>Skills</strong> — tick exactly what they can fix. This is not decoration: the scheduler will <em>never</em> offer them a job they lack the skill for. An appliance-only tech will never be suggested for an AC repair.</li>
+      <li><strong>Weekly schedule</strong> — their days and hours. These become the only times customers can book them.</li>
+      <li><strong>Preferred zones</strong> — optional; nudges the scheduler to keep them in their part of town.</li>
+      <li><span class="btn-name">Create login</span> — shows a temporary password <em>once</em>. Text it to them; they sign in at Team Sign-in and change it via the <em>password</em> link on their Today screen.</li>
+      <li><strong>Time off</strong> — add vacation or sick days here; those days vanish from booking instantly.</li>
+    </ol>
+    <div class="callout">
+      <strong>Never delete — deactivate.</strong> When someone leaves, use <span class="btn-name">Deactivate</span>. Their history stays intact, they disappear from all new scheduling, and any future jobs still on their calendar get flagged on your Today screen for reassignment.
+    </div>
+  </section>
+
+  <section class="chapter" id="settings">
+    <p class="eyebrow">Chapter 12</p>
+    <h2>Settings — the knobs that tune the brain</h2>
+    <ul>
+      <li><strong>Business</strong> — your phone, email, the diagnostic fee amount, warranty length. Change the fee here and the website, booking form, and invoices all follow.</li>
+      <li><strong>Scheduling</strong> — how far ahead customers can book, slot granularity, travel buffer, same-day cutoff time, and the <em>recommendation weights</em>: sliders for how much the scheduler values staying in one zone, short drives, balanced workloads, and customer preference. The defaults are sensible; nudge them only if recommendations consistently feel off.</li>
+      <li><strong>Services</strong> — what you offer and how long each typically takes. Duration matters: it's how the scheduler knows what fits where.</li>
+      <li><strong>Service Zones</strong> — your map of Houston. Add or remove ZIP codes per zone, or tap <span class="btn-name">Draw boundaries →</span> and draw each zone directly on the map. Drawn boundaries take priority over ZIP lists when placing customers.</li>
+      <li><strong>Password</strong> — change yours.</li>
+    </ul>
+  </section>
+
+  <section class="chapter" id="emails">
+    <p class="eyebrow">Chapter 13</p>
+    <h2>Emails your customers get — automatically</h2>
+    <div class="tablewrap"><table>
+      <tr><th>When</th><th>Email</th></tr>
+      <tr><td>They book online</td><td>"Request received" with their EP-number and the fee policy</td></tr>
+      <tr><td>You assign a technician</td><td>"Appointment confirmed" with the day and window</td></tr>
+      <tr><td>The job is completed</td><td>"Your repair is complete" with the warranty note</td></tr>
+      <tr><td>You record a payment</td><td>A receipt with the invoice number and amount</td></tr>
+      <tr><td>Someone requests a password reset</td><td>The reset link (team accounts only)</td></tr>
+    </table></div>
+    <p>All are sent from <strong>no-reply@exactpointrepairs.com</strong>, and when a customer hits reply, it goes to <strong>info@exactpointrepairs.com</strong> — which lands in your inbox. You never have to send these yourself.</p>
+  </section>
+
+  <section class="chapter" id="statuses">
+    <p class="eyebrow">Chapter 14</p>
+    <h2>Status cheat-sheet</h2>
+    <div class="tablewrap"><table>
+      <tr><th>Status</th><th>Meaning</th></tr>
+      <tr><td>pending confirmation</td><td>Customer booked online; the slot is held; confirm or adjust it</td></tr>
+      <tr><td>confirmed</td><td>You've locked it in; customer has been emailed</td></tr>
+      <tr><td>en route / arrived / in progress</td><td>Live updates from the technician's phone</td></tr>
+      <tr><td>waiting for part</td><td>Diagnosed; a part is on order — a second visit will finish it</td></tr>
+      <tr><td>follow-up required</td><td>Needs another look or decision</td></tr>
+      <tr><td><span class="ok">completed</span></td><td>Done — warranty recorded, completion email sent</td></tr>
+      <tr><td>customer declined</td><td>They passed on the quote — the $80 invoice applies</td></tr>
+      <tr><td>cancelled / no show</td><td>Visit won't happen — the technician's time is freed automatically</td></tr>
+    </table></div>
+  </section>
+
+  <section class="chapter" id="help">
+    <p class="eyebrow">Chapter 15</p>
+    <h2>If something looks wrong</h2>
+    <ul>
+      <li><strong>"The calendar looks empty."</strong> Check the date at the top — you may be looking at a quiet day. Sundays are always empty: you're closed, and customers can't book them.</li>
+      <li><strong>"A customer says the site offered no times."</strong> Usually every qualified technician is genuinely full (or on time off) for the visible window. Their request still arrives in Requests — schedule it manually or call them.</li>
+      <li><strong>"An address wouldn't validate."</strong> The customer is asked to double-check it; addresses outside your zones get a message to call you rather than a rejection. Nothing is lost.</li>
+      <li><strong>"I can't put two jobs on one tech at the same time."</strong> Correct — that's the system protecting you. Move one job, or give it to someone else.</li>
+      <li><strong>"I forgot my password."</strong> Team Sign-in → Forgot password → check your email.</li>
+      <li><strong>Something genuinely broken?</strong> Contact your developer (Plaidware Solutions). Every action in the system is recorded, so problems can always be traced.</li>
+    </ul>
+    <div class="callout">
+      <strong>The philosophy, one last time:</strong> the system finds the exact point — the right technician, with the right skill, at the right time, with the least driving — and always shows you <em>why</em>. It recommends; you decide. Every hour it saves you on dispatch is an hour on the tools or with your family.
+    </div>
+  </section>
+
+  <footer>
+    ExactPoint Appliance &amp; HVAC Services · exactpointrepairs.com · 281-915-8264<br>
+    Handbook edition: August 2026. Licensed, registered &amp; insured · 10+ years of experience.
+  </footer>
+</div>
