@@ -63,6 +63,19 @@ export function renderEmail(
           `— ${business.displayName}`,
         ].join("\n"),
       };
+    case "invoice_receipt":
+      return {
+        to: recipient,
+        subject: `${business.displayName} — receipt${reference ? ` for ${reference}` : ""}`,
+        text: [
+          `Hi ${first},`,
+          "",
+          `Payment received${str(payload, "totalLabel") ? ` (${str(payload, "totalLabel")})` : ""}${reference ? ` for invoice ${reference}` : ""}. Thank you!`,
+          "",
+          "Your repair is covered by our two-month labor warranty on the specific work performed.",
+          `— ${business.displayName}`,
+        ].join("\n"),
+      };
     default:
       return {
         to: recipient,

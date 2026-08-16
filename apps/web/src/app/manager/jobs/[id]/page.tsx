@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { appointmentDetail, getDb } from "@exactpoint/db";
+import { appointmentDetail, billingForWorkOrder, getDb } from "@exactpoint/db";
 import { BUSINESS } from "@exactpoint/domain";
+import { BillingPanel } from "./billing-panel";
 import { StatusControls } from "./status-controls";
 
 export const dynamic = "force-dynamic";
@@ -21,8 +22,10 @@ export default async function ManagerJobPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const job = await appointmentDetail(getDb(), id);
+  const db = getDb();
+  const job = await appointmentDetail(db, id);
   if (!job) notFound();
+  const billing = await billingForWorkOrder(db, job.workOrderId);
 
   return (
     <div className="space-y-5">
@@ -127,6 +130,35 @@ export default async function ManagerJobPage({
           )}
         </section>
       </div>
+
+      <BillingPanel
+        data={{
+          workOrderId: job.workOrderId,
+          estimate: billing.estimate
+            ? {
+                id: billing.estimate.id,
+                status: billing.estimate.status,
+                taxRateBps: billing.estimate.taxRateBps,
+                diagnosticFeeCents: billing.estimate.diagnosticFeeCents,
+                notes: billing.estimate.notes,
+              }
+            : null,
+          items: billing.items.map((i) => ({
+            kind: i.kind,
+            description: i.description,
+            quantity: i.quantity,
+            unitPriceCents: i.unitPriceCents,
+          })),
+          invoices: billing.invoices.map((inv) => ({
+            id: inv.id,
+            number: inv.number,
+            status: inv.status,
+            totalCents: inv.totalCents,
+            diagnosticFeeCents: inv.diagnosticFeeCents,
+            paymentMethod: inv.paymentMethod,
+          })),
+        }}
+      />
 
       <StatusControls appointmentId={job.appointmentId} status={job.status} />
     </div>

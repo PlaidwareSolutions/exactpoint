@@ -15,6 +15,7 @@ function pool() {
   return new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
 }
 
+// eslint-disable-next-line no-empty-pattern -- Playwright's beforeAll signature
 test.beforeAll(async ({}, testInfo) => {
   // Per-project identity and time slot so desktop/iphone runs never collide
   // on the technician's reservation exclusion.

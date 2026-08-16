@@ -101,3 +101,15 @@ export type NotificationStatus = (typeof NOTIFICATION_STATUSES)[number];
 
 export const AUDIT_ACTOR_TYPES = ["user", "system", "customer"] as const;
 export type AuditActorType = (typeof AUDIT_ACTOR_TYPES)[number];
+
+export const ESTIMATE_STATUSES = ["draft", "presented", "approved", "declined"] as const;
+export type EstimateStatus = (typeof ESTIMATE_STATUSES)[number];
+
+export const LINE_ITEM_KINDS = ["part", "labor", "other"] as const;
+export type LineItemKind = (typeof LINE_ITEM_KINDS)[number];
+
+export const INVOICE_STATUSES = ["unpaid", "paid", "void"] as const;
+export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
+
+export const PAYMENT_METHODS = ["zelle", "cash", "check"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];

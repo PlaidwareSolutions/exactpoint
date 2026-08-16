@@ -19,6 +19,12 @@ export {
   updateAppointmentStatus,
 } from "./operations/schedule";
 export {
+  billingForWorkOrder,
+  decideEstimate,
+  recordInvoicePayment,
+  upsertEstimate,
+} from "./operations/billing";
+export {
   activeWarrantiesForCustomer,
   addWorkOrderNote,
   appointmentDetail,
