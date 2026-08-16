@@ -49,9 +49,13 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - Booking and job photos now persist in the `exactpoint-media` R2 bucket (S3 API, private, random keys); local-disk fallback remains for keyless dev. Round-trip verified.
 
+## Email — ✅ live 2026-08-16
+
+- Resend (`no-reply@exactpointrepairs.com`, reply-to `info@`), domain DKIM/SPF/DMARC verified; Cloudflare Email Routing forwards info@ to the owner's inbox. Worker sends all queued templates; fixture domains blocked. Verified end-to-end with production booking EP-1001.
+
 ## Post-launch backlog
 
-- Turnstile activation; email provider credentials.
+- Turnstile activation (needs token permission or dashboard-created widget keys).
 - Real job photos + Our Work gallery; testimonials/licensing when supplied.
 - Future phases: online payments, advanced dispatch (spec §87–88).
 
