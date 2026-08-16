@@ -31,10 +31,20 @@ const BACK_BAR = `
   <a href="/manager" style="color:#ffffff;font-weight:700;font-size:0.85rem;text-decoration:none">← Back to ExactPoint</a>
 </div>`;
 
+/** Public origin behind Railway's proxy — request.url shows the internal host. */
+function publicUrl(request: Request, path: string): string {
+  const proto = request.headers.get("x-forwarded-proto") ?? "http";
+  const host =
+    request.headers.get("x-forwarded-host") ??
+    request.headers.get("host") ??
+    "localhost:3000";
+  return `${proto}://${host}${path}`;
+}
+
 export async function GET(request: Request) {
   const session = await getSession();
   if (!session || !canAccessTechnicianArea(session.user.role)) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(publicUrl(request, "/login"));
   }
   try {
     const content = await loadHandbook();
@@ -48,6 +58,8 @@ export async function GET(request: Request) {
     });
   } catch (err) {
     console.error("[help] handbook unavailable", err);
-    return NextResponse.redirect(new URL(session.user.role === "owner" ? "/manager" : "/tech", request.url));
+    return NextResponse.redirect(
+      publicUrl(request, session.user.role === "owner" ? "/manager" : "/tech"),
+    );
   }
 }
