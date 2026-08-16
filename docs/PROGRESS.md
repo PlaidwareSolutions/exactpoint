@@ -53,6 +53,10 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - Resend (`no-reply@exactpointrepairs.com`, reply-to `info@`), domain DKIM/SPF/DMARC verified; Cloudflare Email Routing forwards info@ to the owner's inbox. Worker sends all queued templates; fixture domains blocked. Verified end-to-end with production booking EP-1001.
 
+## Real content — ✅ live 2026-08-16
+
+- 22 owner-supplied job photos web-optimized into Our Work (4 categories), About (owner portrait + at-work shots), and a homepage real-jobs band. A stock composite in the batch was excluded. Originals stay local (photos-inbox/, gitignored). Still open when supplied: licensing/insurance facts, testimonials.
+
 ## Post-launch backlog
 
 - Turnstile activation (needs token permission or dashboard-created widget keys).
