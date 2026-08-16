@@ -4,13 +4,13 @@
  * (years in business, ratings, licenses, 24/7 availability, etc.).
  */
 export const BUSINESS = {
-  legalName: "Exact Point Appliance & HVAC Services",
+  legalName: "ExactPoint Appliance & HVAC Services",
   displayName: "ExactPoint Appliance & HVAC",
   shortName: "ExactPoint",
-  domain: "exactpointapplianceservices.com",
+  domain: "exactpointrepairs.com",
   phone: "281-915-8264",
   phoneHref: "tel:+12819158264",
-  email: "info@exactpointapplianceservices.com",
+  email: "info@exactpointrepairs.com",
   serviceArea: "Greater Houston, Texas",
   timezone: "America/Chicago",
   diagnosticFeeCents: 8000,

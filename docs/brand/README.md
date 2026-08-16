@@ -1,9 +1,9 @@
 # ExactPoint Brand
 
-Status: **concept stage** — three logo concepts await owner selection (spec §50).
-The chosen concept will be finalized in Phase 2: wordmark converted to outlined
-paths (no font dependency), plus horizontal/stacked/favicon lockups and
-transparent-PNG exports at standard sizes.
+Status: **Concept 2 — EP Badge — selected by the owner (2026-08-15).**
+It drives the Phase 2 design system. Finalization: wordmark converted to
+outlined paths (no font dependency), horizontal/stacked/icon-only lockups,
+favicon set, transparent-PNG exports. Concepts 1 and 3 are kept for history.
 
 Palette (proposed): deep navy `#16233B` (trust/steel), point orange `#F26A21`
 (heat/urgency accent), slate `#5B6B85` (secondary text). Every concept works in

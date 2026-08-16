@@ -1,8 +1,8 @@
 # ExactPoint Digital Service Platform
 
-Field-service management platform for **Exact Point Appliance & HVAC Services** (Greater Houston):
+Field-service management platform for **ExactPoint Appliance & HVAC Services** (Greater Houston):
 
-- **Customer website** — exactpointapplianceservices.com: service info, trust content, and intelligent online booking.
+- **Customer website** — exactpointrepairs.com: service info, trust content, and intelligent online booking.
 - **ExactPoint Service Manager** — private owner/dispatch app: technicians, customers, multi-technician geo-aware scheduling, routes.
 - **ExactPoint Technician PWA** — mobile field workflow for technicians.
 

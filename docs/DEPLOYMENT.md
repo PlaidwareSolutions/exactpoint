@@ -18,4 +18,4 @@
 
 - Never edit production tables manually — migrations only (spec §54).
 - Keep production changes reversible; database backups before destructive migrations.
-- DNS cutover to exactpointapplianceservices.com happens in Phase 12 with Cloudflare proxy + TLS.
+- DNS cutover to exactpointrepairs.com happens in Phase 12 with Cloudflare proxy + TLS.

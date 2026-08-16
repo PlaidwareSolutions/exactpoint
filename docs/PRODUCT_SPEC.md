@@ -4,6 +4,12 @@
 > Credentials mentioned in the original brief are intentionally omitted — secrets
 > live outside the repository (see docs/SECURITY.md).
 
+> **Owner amendments (2026-08-15, supersede the original text below):**
+> domain is **exactpointrepairs.com** (purchased via Cloudflare; the original
+> exactpointapplianceservices.com is obsolete); business name styling is
+> **ExactPoint Appliance & HVAC Services**; business email is
+> **info@exactpointrepairs.com**; logo **Concept 2 (EP Badge)** selected.
+
 **Product:** ExactPoint Digital Service Platform
 **Legal business name supplied:** Exact Point Appliance & HVAC Services
 **Website:** exactpointapplianceservices.com
