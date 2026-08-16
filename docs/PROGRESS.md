@@ -21,11 +21,16 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 - Booking flow per §31 with stub address validation → ZIP-zone detection, preferred windows (no Sundays, 3 PM same-day cutoff, America/Chicago), photo upload (local StorageProvider — R2 needs an R2-scoped token), $80 fee acknowledgement, EP-#### confirmation; zod + rate limits + honeypot.
 - Tests: 27 unit/integration + 6 Playwright E2E (iPhone + desktop booking end-to-end). Domain facts updated to exactpointrepairs.com (Cloudflare zone active, token verified — DNS cutover deferred to launch).
 
+## Milestone 3 — Service Manager + intelligent scheduler (spec Phases 4–7) — ✅ code complete 2026-08-16
+
+- Scheduling engine complete: hard-constraint filtering, weighted explainable scoring (owner-tunable in Settings → Scheduling), multi-technician windows, override validation. Spec §80 Tests A–L all automated (see TEST_PLAN.md).
+- Public booking now engine-backed: real technician slots behind signed tokens, 5-minute holds at review, hold→appointment conversion on submit, graceful degradation to the unassigned queue.
+- Manager app: Today dashboard, requests queue with ranked explainable recommendations + audited manual override, drag-and-drop technician-lane calendar (day) + week view, area/zone analytics, customers, full team management (skills/schedules/zones/time off/login creation/deactivation with future-assignment flagging), settings for business/scheduler weights/services/zones (ZIP editing).
+- 50 unit/integration tests + 12 Playwright E2E, all green; deployed to staging.
+
 ## Upcoming
 
-- M2: design system from chosen logo, §43 public pages, booking flow with fee acknowledgement, Turnstile, Playwright E2E.
-- M3: team management, technician-lane calendar, zones admin + map, intelligent scheduler with explainability, Tests A–L complete.
-- Then: routes/Optimize Day, technician PWA, records/warranty, notifications, SEO/launch.
+- Final stretch: route planning + Optimize Day (§75), technician PWA (§76), service records/warranty (§77), email notifications (§78), SEO/launch (§79). Google Maps keys unlock real travel times, polygon drawing, and the map view.
 
 ## Blocked on owner inputs
 

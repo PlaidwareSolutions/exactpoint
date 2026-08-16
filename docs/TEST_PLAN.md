@@ -10,18 +10,20 @@ Bar: spec §80 scenarios A–L all automated before Milestone 3 completes; §81 
 
 | Test | Scenario | Status |
 |---|---|---|
-| A | Parallel technicians, same time | ✅ DB (`reservations.test.ts`) + logic (`availability.test.ts`) |
-| B | Same-technician overlap rejected | ✅ DB + logic |
-| C | Skill mismatch excluded | ✅ logic (`isQualified`) — engine-level in M3 |
-| D | Geographic preference | ⏳ M3 (scoring) |
-| E | Travel-impossible rejected | ✅ logic (`travelFeasible`) — engine-level with real travel data in M3 |
-| F | Time off respected | ⏳ M3 (time-off reservations already block at DB level) |
-| G | No public Sunday slots | ⏳ M2/M3 (booking flow) |
-| H | Emergency proximity ranking | ⏳ M3 |
-| I | Two-technician job needs both available | ⏳ M3 (schema ready) |
-| J | Concurrent booking → exactly one wins | ✅ DB (two connections, `23P01` on loser) |
-| K | Deactivation: history kept, future flagged | ⏳ M3 (Team management) |
-| L | Manual override allowed + audited | ⏳ M3 |
+| A | Parallel technicians, same time | ✅ DB (`reservations.test.ts`) + engine (`engine.test.ts`) |
+| B | Same-technician overlap rejected | ✅ DB + engine + reassignment path (`schedule.test.ts`) |
+| C | Skill mismatch excluded | ✅ engine (never a candidate) |
+| D | Geographic preference | ✅ engine (Katy-loaded tech outranks empty tech; zoneAffinity component present) |
+| E | Travel-impossible rejected | ✅ engine (insertion with insufficient travel gap filtered) |
+| F | Time off respected | ✅ DB (`addTimeOff` blocks scheduling; context shows reservation) + engine (no shift → no candidates) |
+| G | No public Sunday slots | ✅ `windows.test.ts` + engine (Sunday shift null) |
+| H | Emergency: earliest feasible arrival ranks first | ✅ engine |
+| I | Two-technician job needs both available | ✅ engine (`generateMultiTechnicianCandidates`; distinct technicians enforced) |
+| J | Concurrent booking → exactly one wins | ✅ DB (two connections; exactly one reservation exists) |
+| K | Deactivation: history kept, excluded from scheduling, future flagged | ✅ engine (inactive excluded) + `unassignedWork` query surfaces orphaned future assignments |
+| L | Manual override allowed + audited | ✅ engine (`validateAssignment`: warnings vs blockers) + audited `assignRequest` E2E path |
+
+E2E (Playwright, 12 tests · iPhone + desktop): booking end-to-end with engine-backed slot + hold + reserved confirmation; unconfirmable address guard; homepage CTAs; owner assigns from an explainable recommendation and sees it on the calendar; technician denied `/manager`.
 
 Also covered now: hold blocks booking; expired hold reaped → slot bookable; reservation source CHECK; role isolation (unit + live HTTP verification); address stub confidence paths; travel heuristics.
 
