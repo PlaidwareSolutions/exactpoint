@@ -24,6 +24,8 @@
 
 ## Rules
 
+- **Deploy `web` AND `worker` together whenever shared packages change** (`packages/notifications` templates, `packages/db` operations/schema, `packages/domain`, `packages/scheduling`). The worker renders email templates: a stale worker silently falls back to the generic template for template names it doesn't know (this bit us on password_reset at launch).
+
 - Never edit production tables manually — migrations only (spec §54).
 - Keep production changes reversible; database backups before destructive migrations.
 - DNS cutover to exactpointrepairs.com happens in Phase 12 with Cloudflare proxy + TLS.
