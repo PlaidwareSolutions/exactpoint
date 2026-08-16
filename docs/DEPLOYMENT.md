@@ -16,7 +16,7 @@
 
 ## Production domain
 
-- `exactpointrepairs.com` and `www` are Railway custom domains on the `web` service; Cloudflare holds DNS-only CNAMEs (apex → `nuoi9xnd.up.railway.app`, www → `bo9096i7.up.railway.app`). DNS-only keeps Railway's Let's Encrypt issuance simple; the Cloudflare proxy can be enabled later (set SSL/TLS to Full first).
+- `exactpointrepairs.com` and `www` are Railway custom domains on the `web` service; Cloudflare CNAMEs (apex → `nuoi9xnd.up.railway.app`, www → `bo9096i7.up.railway.app`) are **proxied (orange cloud) with zone SSL/TLS mode "Full"**. This is required: Cloudflare flattens apex CNAMEs to A records, so Railway can never validate a DNS-only apex — with the proxy on, Cloudflare's universal edge certificate serves visitors and Railway receives the correct Host header. Do not switch these records to DNS-only and do not use "Full (strict)" (the Railway origin cert is for `*.up.railway.app`).
 - `BETTER_AUTH_URL=https://exactpointrepairs.com`; auth trusted origins also cover www, the railway.app subdomain, and localhost.
 - Email sending activates when `RESEND_API_KEY` + `EMAIL_FROM` are set on the worker; until then notifications log to the worker console and stay marked sent.
 
