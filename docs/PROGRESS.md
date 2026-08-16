@@ -28,9 +28,17 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 - Manager app: Today dashboard, requests queue with ranked explainable recommendations + audited manual override, drag-and-drop technician-lane calendar (day) + week view, area/zone analytics, customers, full team management (skills/schedules/zones/time off/login creation/deactivation with future-assignment flagging), settings for business/scheduler weights/services/zones (ZIP editing).
 - 50 unit/integration tests + 12 Playwright E2E, all green; deployed to staging.
 
-## Upcoming
+## Final stretch — Phases 8–12 — ✅ code complete 2026-08-16
 
-- Final stretch: route planning + Optimize Day (§75), technician PWA (§76), service records/warranty (§77), email notifications (§78), SEO/launch (§79). Google Maps keys unlock real travel times, polygon drawing, and the map view.
+- Routes + Optimize Day (owner-approved, windows never moved); technician PWA with full field flow and own-jobs-only privacy; completion → 2-month warranty records + possible-callback flags; worker email notifications behind EmailProvider (Resend-ready, console until credentials); LocalBusiness JSON-LD; PWA manifest; **exactpointrepairs.com + www live on Railway with Cloudflare DNS**.
+- 53 unit/integration + 18 E2E tests green.
+
+## Post-launch backlog
+
+- Google Maps keys → real drive times (Routes API), polygon drawing, tile map view.
+- R2 storage swap for durable photos; Turnstile activation; email provider credentials.
+- Real job photos + Our Work gallery; testimonials/licensing when supplied.
+- Future phases: estimates, invoices, online payments, advanced dispatch (spec §85–88).
 
 ## Blocked on owner inputs
 
