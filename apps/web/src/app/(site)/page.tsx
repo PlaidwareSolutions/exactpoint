@@ -42,7 +42,16 @@ export default function HomePage() {
 
       {/* Fee & warranty strip */}
       <section className="border-b border-line bg-white">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-3">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-navy">
+              Licensed &amp; insured
+            </h2>
+            <p className="mt-1 text-sm text-slate">
+              Licensed, registered, and insured — with over 10 years of
+              experience in the trade.
+            </p>
+          </div>
           <div>
             <h2 className="text-sm font-extrabold uppercase tracking-wider text-navy">
               $80 diagnostic — waived

@@ -18,6 +18,10 @@ export const BUSINESS = {
   paymentMethods: ["Zelle", "Cash", "Check"],
   sameDayService: true,
   emergencyService: "subject to availability",
+  /** Owner-supplied 2026-08-16: licensed, registered, and insured. */
+  credentials: "Licensed, registered & insured",
+  /** Owner-supplied 2026-08-16. */
+  experience: "10+ years of experience",
 } as const;
 
 /** Default business hours; per-technician schedules override these. */

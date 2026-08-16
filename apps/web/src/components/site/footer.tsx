@@ -16,6 +16,9 @@ export function SiteFooter() {
             {BUSINESS.legalName}. Appliance repair and HVAC service across{" "}
             {BUSINESS.serviceArea}.
           </p>
+          <p className="mt-2 text-sm font-semibold text-white/85">
+            {BUSINESS.credentials} · {BUSINESS.experience}
+          </p>
         </div>
         <div>
           <h3 className="text-sm font-bold uppercase tracking-wider text-white/60">

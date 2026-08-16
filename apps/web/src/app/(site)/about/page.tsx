@@ -19,7 +19,13 @@ export default function AboutPage() {
             <p>
               {BUSINESS.legalName} repairs household appliances and services
               HVAC systems across Greater Houston — from Katy to Baytown,
-              Spring to League City.
+              Spring to League City. We&apos;re{" "}
+              <strong className="text-navy">
+                licensed, registered, and insured
+              </strong>
+              , with{" "}
+              <strong className="text-navy">over 10 years of experience</strong>{" "}
+              in the trade.
             </p>
             <p>
               The name is the promise: find the exact point of failure, explain
@@ -65,14 +71,14 @@ export default function AboutPage() {
 
         <div className="space-y-3">
           <img
-            src="/images/about/shams-portrait.jpg"
-            alt="Shams, ExactPoint's owner and lead technician, in his safety vest"
+            src="/images/work/hvac-gauges-condenser.jpg"
+            alt="Refrigerant manifold gauges connected during an AC service call"
             className="w-full rounded-2xl border border-line object-cover"
           />
           <div className="grid grid-cols-2 gap-3">
             <img
-              src="/images/about/shams-attic-work.jpg"
-              alt="Working by headlamp in a Houston attic"
+              src="/images/about/hands-on-connector.jpg"
+              alt="Hands-on appliance repair work"
               className="aspect-square w-full rounded-xl border border-line object-cover"
             />
             <img
@@ -80,6 +86,10 @@ export default function AboutPage() {
               alt="Refrigerant gauges and scale during an HVAC diagnostic"
               className="aspect-square w-full rounded-xl border border-line object-cover"
             />
+          </div>
+          <div className="rounded-xl border border-line bg-white p-4 text-sm">
+            <p className="font-bold text-navy">{BUSINESS.credentials}</p>
+            <p className="mt-1 text-slate">{BUSINESS.experience} across Greater Houston.</p>
           </div>
           <p className="text-xs text-slate">
             Attic furnaces, July condensers, and everything in between — this

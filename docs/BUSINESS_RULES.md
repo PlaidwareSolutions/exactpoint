@@ -8,6 +8,7 @@ Verified facts live in `packages/domain/src/business.ts`; owner-editable copies 
 - **Diagnostic/service-call fee**: $80, due when the customer declines the quoted repair; **waived when the repair is approved**. Shown and acknowledged during booking.
 - **Labor warranty**: 2 months, covering the specific repair/workmanship performed — unrelated failures are separate problems. Repeat contact within warranty flags *Possible Warranty Callback*; the owner decides whether it qualifies.
 - **Payments** (Phase 1): Zelle, cash, check. No card processing at launch; data model leaves room for it.
+- **Credentials (owner-supplied 2026-08-16)**: "Licensed, registered & insured" and "10+ years of experience" may be published. Pending: the license *number* (e.g. TACLA/TACLB) — Texas expects it displayed in HVAC advertising; add it site-wide when supplied. No photos of the owner on the site (owner's request, 2026-08-16).
 - **Brands**: say "We service all major appliance brands." — no logo walls, no manufacturer-authorization claims.
 - **Booking**: customers never pick a technician; assignment is an ExactPoint operational decision. Same-day allowed until the configurable cutoff when capacity/skill/travel permit; owner can override.
 - **Technicians**: deactivate, never delete; deactivation removes them from new scheduling and flags future assignments for reassignment (spec Test K).
