@@ -17,8 +17,18 @@ import {
 } from "@exactpoint/db";
 import { BUSINESS } from "@exactpoint/domain";
 import { StubAddressProvider, type ValidatedAddress } from "@exactpoint/maps";
+import {
+  classifyZoneForPoint,
+  createSlotHold,
+  ScheduleConflictError,
+  scheduleAppointment,
+} from "@exactpoint/db";
+import { zonedTimeToUtc } from "@exactpoint/scheduling";
+import { loadSchedulingConfig, requiredSkillForServiceType } from "@/lib/scheduling-server";
 import { addressInputSchema, bookingSchema } from "./schema";
 import { rateLimit } from "./rate-limit";
+import { bookableWindows, type BookableWindow } from "./slots";
+import { verifySlotToken } from "./slot-token";
 
 /** Google Address Validation replaces the stub in Phase 6 (spec §9, §84). */
 const addressProvider = new StubAddressProvider();
@@ -33,6 +43,9 @@ export interface AddressCheckResult {
   confidence?: ValidatedAddress["confidence"];
   standardized?: { street: string; unit?: string; city: string; state: string; zip: string };
   zoneName?: string | null;
+  zoneId?: string | null;
+  latitude?: number;
+  longitude?: number;
   message?: string;
 }
 
@@ -55,25 +68,82 @@ export async function validateBookingAddress(input: unknown): Promise<AddressChe
   }
 
   const db = getDb();
-  const [zoneRow] = await db
-    .select({ name: serviceZones.name })
-    .from(serviceZoneZips)
-    .innerJoin(serviceZones, eq(serviceZoneZips.zoneId, serviceZones.id))
-    .where(and(eq(serviceZoneZips.zip, validated.standardized.zip), eq(serviceZones.isActive, true)));
+  const classified = await classifyZoneForPoint(db, {
+    latitude: validated.latitude,
+    longitude: validated.longitude,
+    zip: validated.standardized.zip,
+  });
+  const [zoneRow] = classified
+    ? await db
+        .select({ id: serviceZones.id, name: serviceZones.name })
+        .from(serviceZones)
+        .where(and(eq(serviceZones.id, classified.zoneId), eq(serviceZones.isActive, true)))
+    : [];
 
   return {
     ok: true,
     confidence: validated.confidence,
     standardized: validated.standardized,
     zoneName: zoneRow?.name ?? null,
+    zoneId: zoneRow?.id ?? null,
+    latitude: validated.latitude,
+    longitude: validated.longitude,
     message: zoneRow
       ? undefined
       : `This address may be outside our normal service area. Please call ${BUSINESS.phone} so we can check availability.`,
   };
 }
 
+export interface OfferedSlotsResult {
+  windows: BookableWindow[];
+  engineBacked: boolean;
+}
+
+/** Engine-backed windows for the booking UI, after address validation. */
+export async function getBookingWindows(input: {
+  serviceTypeSlug: string;
+  zoneId?: string | null;
+  latitude?: number;
+  longitude?: number;
+  urgency: "normal" | "emergency";
+}): Promise<OfferedSlotsResult> {
+  if (!rateLimit(`slots:${await clientIp()}`, 30, 60 * 60 * 1000)) {
+    return { windows: [], engineBacked: false };
+  }
+  return bookableWindows({
+    serviceTypeSlug: String(input.serviceTypeSlug).slice(0, 60),
+    zoneId: input.zoneId ?? null,
+    location:
+      input.latitude != null && input.longitude != null
+        ? { latitude: input.latitude, longitude: input.longitude }
+        : null,
+    urgency: input.urgency === "emergency" ? "emergency" : "normal",
+  });
+}
+
+/**
+ * Places a short-lived hold on the selected slot while the customer reviews
+ * (spec §24). Returns null when the slot was just taken.
+ */
+export async function holdSelectedSlot(
+  slotToken: string,
+): Promise<{ holdId: string; expiresAt: string } | null> {
+  if (!rateLimit(`hold:${await clientIp()}`, 15, 60 * 60 * 1000)) return null;
+  const claim = verifySlotToken(String(slotToken));
+  if (!claim) return null;
+  const config = await loadSchedulingConfig();
+  const hold = await createSlotHold(getDb(), {
+    technicianId: claim.technicianId,
+    start: new Date(claim.start),
+    end: new Date(claim.end),
+    sessionKey: `web:${await clientIp()}`,
+    holdMinutes: config.holdMinutes,
+  });
+  return hold ? { holdId: hold.holdId, expiresAt: hold.expiresAt.toISOString() } : null;
+}
+
 export type SubmitResult =
-  | { ok: true; reference: string }
+  | { ok: true; reference: string; scheduled: boolean }
   | { ok: false; error: string };
 
 export async function submitBooking(input: unknown): Promise<SubmitResult> {
@@ -92,7 +162,7 @@ export async function submitBooking(input: unknown): Promise<SubmitResult> {
 
   // Honeypot tripped: report success, write nothing.
   if (data.company && data.company.length > 0) {
-    return { ok: true, reference: "EP-0000" };
+    return { ok: true, reference: "EP-0000", scheduled: false };
   }
 
   const validated = await addressProvider.validate(data.address);
@@ -102,7 +172,7 @@ export async function submitBooking(input: unknown): Promise<SubmitResult> {
 
   const db = getDb();
   try {
-    const reference = await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       const [serviceType] = await tx
         .select({ id: serviceTypes.id })
         .from(serviceTypes)
@@ -200,10 +270,54 @@ export async function submitBooking(input: unknown): Promise<SubmitResult> {
         payload: { reference: request!.reference, firstName: data.firstName },
       });
 
-      return request!.reference;
+      return {
+        reference: request!.reference,
+        requestId: request!.id,
+        customerId,
+        addressId: address!.id,
+        serviceTypeId: serviceType?.id ?? null,
+      };
     });
 
-    return { ok: true, reference };
+    // Convert the held slot into a pending appointment (spec §24). The
+    // request survives regardless — a lost race degrades to the unassigned
+    // queue instead of losing the customer.
+    let scheduled = false;
+    const claim = data.slotToken ? verifySlotToken(data.slotToken) : null;
+    if (claim) {
+      try {
+        const { durationMinutes } = await requiredSkillForServiceType(data.serviceTypeSlug);
+        const picked = data.preferredWindows[0];
+        const windowStart = picked
+          ? zonedTimeToUtc(picked.date, picked.start, BUSINESS.timezone)
+          : new Date(claim.start);
+        const windowEnd = picked
+          ? zonedTimeToUtc(picked.date, picked.end, BUSINESS.timezone)
+          : new Date(claim.end);
+        await scheduleAppointment(db, {
+          serviceRequestId: result.requestId,
+          customerId: result.customerId,
+          addressId: result.addressId,
+          serviceTypeId: result.serviceTypeId,
+          technicianId: claim.technicianId,
+          windowStart,
+          windowEnd,
+          scheduledStart: new Date(claim.start),
+          scheduledEnd: new Date(claim.end),
+          durationMinutes,
+          status: "pending_confirmation",
+          holdId: data.holdId ?? null,
+          actorType: "customer",
+        });
+        scheduled = true;
+      } catch (err) {
+        if (!(err instanceof ScheduleConflictError)) {
+          console.error("[booking] scheduling after submit failed", err);
+        }
+      }
+    }
+
+    return { ok: true, reference: result.reference, scheduled };
   } catch (err) {
     console.error("[booking] submit failed", err);
     return {

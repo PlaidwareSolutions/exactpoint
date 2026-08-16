@@ -3,11 +3,13 @@
 import { useRef, useState } from "react";
 import { BUSINESS } from "@exactpoint/domain";
 import {
+  getBookingWindows,
+  holdSelectedSlot,
   submitBooking,
   validateBookingAddress,
   type AddressCheckResult,
 } from "@/lib/booking/actions";
-import type { OfferedWindow } from "@/lib/booking/windows";
+import type { BookableWindow, OfferedWindow } from "@/lib/booking/windows";
 
 export interface ServiceOption {
   slug: string;
@@ -46,6 +48,7 @@ export function BookingForm({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
+  const [scheduled, setScheduled] = useState(false);
 
   const [service, setService] = useState(validPreselect);
   const [serviceOther, setServiceOther] = useState("");
@@ -66,9 +69,14 @@ export function BookingForm({
   const [city, setCity] = useState("");
   const [zip, setZip] = useState("");
   const [addressCheck, setAddressCheck] = useState<AddressCheckResult | null>(null);
-  const [picked, setPicked] = useState<OfferedWindow[]>([]);
+  const [picked, setPicked] = useState<BookableWindow[]>([]);
+  const [liveWindows, setLiveWindows] = useState<BookableWindow[] | null>(null);
+  const [engineBacked, setEngineBacked] = useState(false);
+  const [hold, setHold] = useState<{ holdId: string; expiresAt: string } | null>(null);
   const [feeAck, setFeeAck] = useState(false);
   const honeypotRef = useRef<HTMLInputElement>(null);
+
+  const shownWindows: BookableWindow[] = liveWindows ?? windows;
 
   function next() {
     setError(null);
@@ -106,21 +114,69 @@ export function BookingForm({
     setError(null);
     const result = await validateBookingAddress({ street, unit, city, state: "TX", zip });
     setAddressCheck(result);
-    setBusy(false);
     if (!result.ok) {
+      setBusy(false);
       setError(result.message ?? "We could not confirm this address. Please review it.");
       return;
     }
+    const offered = await getBookingWindows({
+      serviceTypeSlug: service,
+      zoneId: result.zoneId,
+      latitude: result.latitude,
+      longitude: result.longitude,
+      urgency: urgent ? "emergency" : "normal",
+    });
+    if (offered.windows.length > 0) {
+      setLiveWindows(offered.windows);
+      setEngineBacked(offered.engineBacked);
+    }
+    setPicked([]);
+    setHold(null);
+    setBusy(false);
     next();
   }
 
-  function toggleWindow(w: OfferedWindow) {
+  function toggleWindow(w: BookableWindow) {
+    setHold(null);
+    if (engineBacked) {
+      // Engine-backed slots are exclusive: pick exactly one.
+      setPicked((p) =>
+        p.some((x) => x.date === w.date && x.start === w.start) ? [] : [w],
+      );
+      return;
+    }
     setPicked((p) => {
       const exists = p.some((x) => x.date === w.date && x.start === w.start);
       if (exists) return p.filter((x) => !(x.date === w.date && x.start === w.start));
       if (p.length >= 3) return p;
       return [...p, w];
     });
+  }
+
+  async function continueToReview() {
+    const selected = picked[0];
+    if (engineBacked && selected?.slotToken) {
+      setBusy(true);
+      setError(null);
+      const placed = await holdSelectedSlot(selected.slotToken);
+      setBusy(false);
+      if (!placed) {
+        setError("That window was just taken. Please pick another.");
+        const offered = await getBookingWindows({
+          serviceTypeSlug: service,
+          zoneId: addressCheck?.zoneId,
+          latitude: addressCheck?.latitude,
+          longitude: addressCheck?.longitude,
+          urgency: urgent ? "emergency" : "normal",
+        });
+        setLiveWindows(offered.windows);
+        setEngineBacked(offered.engineBacked);
+        setPicked([]);
+        return;
+      }
+      setHold(placed);
+    }
+    next();
   }
 
   async function submit() {
@@ -141,13 +197,16 @@ export function BookingForm({
       email,
       address: { street, unit, city, state: "TX", zip },
       addressConfirmedDespiteWarning: Boolean(addressCheck?.message),
-      preferredWindows: picked,
+      preferredWindows: picked.map(({ date, start, end, label }) => ({ date, start, end, label })),
       feeAcknowledged: feeAck as true,
+      slotToken: engineBacked ? picked[0]?.slotToken : undefined,
+      holdId: hold?.holdId,
       photoAssetIds: photos.map((p) => p.id),
       company: honeypotRef.current?.value ?? "",
     });
     setBusy(false);
     if (result.ok) {
+      setScheduled(result.scheduled);
       setReference(result.reference);
     } else {
       setError(result.error);
@@ -164,9 +223,20 @@ export function BookingForm({
           Reference: {reference}
         </h2>
         <p className="mt-4 text-slate">
-          Thanks, {firstName}! We&apos;ve received your request and will contact
-          you at <strong className="text-navy">{phone}</strong> to confirm your
-          appointment window.
+          {scheduled ? (
+            <>
+              Thanks, {firstName}! Your window{" "}
+              <strong className="text-navy">{picked[0]?.label}</strong> is
+              reserved. We&apos;ll confirm with you at{" "}
+              <strong className="text-navy">{phone}</strong>.
+            </>
+          ) : (
+            <>
+              Thanks, {firstName}! We&apos;ve received your request and will
+              contact you at <strong className="text-navy">{phone}</strong> to
+              confirm your appointment window.
+            </>
+          )}
         </p>
         <ul className="mt-4 space-y-2 text-sm text-slate">
           <li>• We&apos;ll confirm the exact arrival window with you directly.</li>
@@ -403,13 +473,15 @@ export function BookingForm({
           <div className="space-y-4">
             <h2 className="text-lg font-bold text-navy">When works for you?</h2>
             <p className="text-sm text-slate">
-              Pick up to three windows that work — we&apos;ll confirm one with you.
+              {engineBacked
+                ? "These windows have real availability — pick one and we'll reserve it."
+                : "Pick up to three windows that work — we'll confirm one with you."}
               {addressCheck?.zoneName && (
                 <> Your area: <strong className="text-navy">{addressCheck.zoneName}</strong>.</>
               )}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
-              {windows.map((w) => {
+              {shownWindows.map((w) => {
                 const selected = picked.some((x) => x.date === w.date && x.start === w.start);
                 return (
                   <button
@@ -467,6 +539,12 @@ export function BookingForm({
                 </div>
               )}
             </dl>
+            {hold && (
+              <p className="rounded-lg bg-point/10 px-4 py-2.5 text-sm font-semibold text-point">
+                We&apos;re holding this window for you for a few minutes while
+                you finish.
+              </p>
+            )}
             <div className="rounded-xl border border-line p-4">
               <h3 className="text-sm font-bold text-navy">Diagnostic &amp; service-call fee</h3>
               <p className="mt-1 text-sm text-slate">
@@ -530,8 +608,13 @@ export function BookingForm({
             </button>
           )}
           {step === 5 && (
-            <button type="button" onClick={next} disabled={picked.length === 0} className={primaryBtn}>
-              Continue
+            <button
+              type="button"
+              onClick={continueToReview}
+              disabled={picked.length === 0 || busy}
+              className={primaryBtn}
+            >
+              {busy ? "Reserving…" : "Continue"}
             </button>
           )}
           {step === 6 && (

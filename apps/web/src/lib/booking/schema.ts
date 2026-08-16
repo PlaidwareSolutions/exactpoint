@@ -47,6 +47,9 @@ export const bookingSchema = z.object({
   feeAcknowledged: z.literal(true, {
     error: "Please acknowledge the diagnostic-fee policy",
   }),
+  /** Present when the customer picked an engine-backed slot. */
+  slotToken: z.string().max(2048).optional(),
+  holdId: z.uuid().optional(),
   photoAssetIds: z.array(z.uuid()).max(6).default([]),
   /** Honeypot — humans never fill this. */
   company: z.string().max(0).optional().or(z.literal("")),

@@ -34,6 +34,11 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 14, // 14 days
     updateAge: 60 * 60 * 24,
   },
+  rateLimit: {
+    // Local E2E runs sign in rapidly from one IP; production keeps the
+    // brute-force limiter on (env flag is never set there).
+    enabled: process.env.AUTH_RATE_LIMIT_DISABLED === "1" ? false : true,
+  },
   plugins: [
     admin({
       ac,

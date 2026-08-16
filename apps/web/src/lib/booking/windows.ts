@@ -7,6 +7,13 @@ export interface OfferedWindow {
   label: string;
 }
 
+/** A window optionally backed by a specific (opaque) technician slot. */
+export interface BookableWindow extends OfferedWindow {
+  slotToken?: string;
+  scheduledStartIso?: string;
+  scheduledEndIso?: string;
+}
+
 /** Customer-facing 3-hour arrival windows inside business hours. */
 const DAY_WINDOWS: { start: string; end: string }[] = [
   { start: "07:00", end: "10:00" },
