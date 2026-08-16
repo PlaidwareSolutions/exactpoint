@@ -37,12 +37,15 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - Estimate editor on the manager job page (parts/labor lines, live totals, tax), audited customer approve/decline, automatic invoice issuance (approved → fee waived + tax; declined → $80 diagnostic only), Zelle/cash/check payment recording, printable INV-#### invoices, receipt email on payment. No card processing (§87). 58 unit/integration tests green.
 
+## Google Maps Platform — ✅ live 2026-08-16
+
+- Address Validation (rooftop geocodes) + Routes API drive times power booking, recommendations, assignment checks, and Optimize Day (batched matrix, 15-min cache, haversine fallback). `/manager/map` day view and polygon boundary drawing (Settings → Service Zones → Draw boundaries) active; polygon-first classification live.
+
 ## Post-launch backlog
 
-- Google Maps keys → real drive times (Routes API), polygon drawing, tile map view.
 - R2 storage swap for durable photos; Turnstile activation; email provider credentials.
 - Real job photos + Our Work gallery; testimonials/licensing when supplied.
-- Future phases: estimates, invoices, online payments, advanced dispatch (spec §85–88).
+- Future phases: online payments, advanced dispatch (spec §87–88).
 
 ## Blocked on owner inputs
 
