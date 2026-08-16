@@ -48,9 +48,24 @@ await boss.work(EXPIRE_HOLDS, async () => {
   if (expired > 0) console.log(`[worker] expired ${expired} slot hold(s)`);
 });
 
+/** Fixture/test recipients must never leave the building. */
+const BLOCKED_RECIPIENT_DOMAINS = ["example.com", "exactpoint.local", "invalid"];
+
+function isBlockedRecipient(recipient: string): boolean {
+  const domain = recipient.split("@")[1]?.toLowerCase() ?? "";
+  return BLOCKED_RECIPIENT_DOMAINS.some((d) => domain === d || domain.endsWith(`.${d}`));
+}
+
 await boss.work(SEND_NOTIFICATIONS, async () => {
   const pending = await pendingNotifications(db);
   for (const notification of pending) {
+    if (isBlockedRecipient(notification.recipient)) {
+      await markNotification(db, notification.id, {
+        ok: false,
+        error: "blocked test recipient domain",
+      });
+      continue;
+    }
     if (notification.channel !== "email") {
       await markNotification(db, notification.id, {
         ok: false,
