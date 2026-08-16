@@ -11,8 +11,15 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 - Worker: pg-boss with per-minute expired-hold reaper.
 - Scheduling package: interval math + hard-constraint predicates (Tests A/B/C/E at logic level; A/B/J at DB level).
 
-- Logo concepts (3) created under docs/brand/concepts/ — awaiting owner selection.
-- **Railway staging deploy blocked**: the token supplied 2026-08-15 fails authentication against both the account API and project-token endpoints (verified via CLI and GraphQL). Needs a re-issued token — an *Account token* (Railway → Account Settings → Tokens, no workspace scope) is preferred so the project can be created and configured end-to-end.
+- Logo: **Concept 2 (EP Badge) selected by owner 2026-08-15**; drives the design system.
+- Railway: token turned out to be a *workspace token* (no user context — that's why `whoami` failed). Project `exactpoint` provisioned via GraphQL: services `postgres` (postgis/postgis:17-3.6-alpine + volume), `web`, `worker`; staging at **https://web-production-6b592.up.railway.app**; migrations+seeds run as web pre-deploy.
+
+## Milestone 2 — Public website + booking (spec Phases 2–3) — ✅ code complete 2026-08-15
+
+- Design system from EP Badge (navy `#16233B`, point orange `#F26A21`); favicon; header/footer/mobile call bar.
+- All §43 pages (home, 11 service pages + 2 hubs, about, our-work placeholder, service areas, contact, 2 policies) + sitemap/robots.
+- Booking flow per §31 with stub address validation → ZIP-zone detection, preferred windows (no Sundays, 3 PM same-day cutoff, America/Chicago), photo upload (local StorageProvider — R2 needs an R2-scoped token), $80 fee acknowledgement, EP-#### confirmation; zod + rate limits + honeypot.
+- Tests: 27 unit/integration + 6 Playwright E2E (iPhone + desktop booking end-to-end). Domain facts updated to exactpointrepairs.com (Cloudflare zone active, token verified — DNS cutover deferred to launch).
 
 ## Upcoming
 
