@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BUSINESS, EMERGENCY_WORDING } from "@exactpoint/domain";
+import { HOME_WORK_PREVIEW } from "@/content/gallery";
 import { APPLIANCE_SERVICES, HVAC_SERVICES } from "@/content/services";
 
 export default function HomePage() {
@@ -98,6 +99,32 @@ export default function HomePage() {
               <p className="mt-1 line-clamp-2 text-sm text-slate">{s.intro}</p>
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* Real work */}
+      <section className="bg-navy">
+        <div className="mx-auto max-w-6xl px-4 py-12">
+          <div className="flex items-end justify-between gap-4">
+            <h2 className="text-2xl font-extrabold text-white sm:text-3xl">
+              Real jobs, real photos
+            </h2>
+            <Link href="/our-work" className="shrink-0 text-sm font-bold text-point hover:underline">
+              See Our Work →
+            </Link>
+          </div>
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            {HOME_WORK_PREVIEW.map((photo) => (
+              <Link key={photo.src} href="/our-work" className="overflow-hidden rounded-xl">
+                <img
+                  src={photo.src}
+                  alt={photo.alt}
+                  loading="lazy"
+                  className="aspect-square w-full object-cover transition duration-300 hover:scale-[1.03]"
+                />
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
