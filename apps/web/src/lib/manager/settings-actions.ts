@@ -6,7 +6,9 @@ import { eq } from "drizzle-orm";
 import {
   auditLogs,
   businessSettings,
+  deleteZonePolygon,
   getDb,
+  insertZonePolygon,
   schedulingSettings,
   serviceTypes,
   serviceZones,
@@ -140,6 +142,43 @@ export async function removeZoneZip(zoneId: string, zip: string): Promise<Action
   const db = getDb();
   await db.delete(serviceZoneZips).where(eq(serviceZoneZips.zip, zip));
   await audit(session.user.id, "settings.zone_zip_removed", "service_zone", zoneId, { zip });
+  revalidatePath("/manager/settings/zones");
+  return { ok: true };
+}
+
+const ringSchema = z
+  .array(z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]))
+  .min(4)
+  .max(2000);
+
+/** Saves a drawn zone boundary (spec §73); polygon-first classification uses it immediately. */
+export async function saveZonePolygon(
+  zoneId: string,
+  rings: unknown,
+): Promise<ActionResult> {
+  const session = await requireOwner();
+  const parsed = z.array(ringSchema).min(1).max(10).safeParse(rings);
+  if (!parsed.success) return { ok: false, error: "Invalid polygon." };
+  try {
+    const id = await insertZonePolygon(getDb(), zoneId, parsed.data as [number, number][][]);
+    await audit(session.user.id, "settings.zone_polygon_added", "service_zone", zoneId, {
+      polygonId: id,
+      points: parsed.data[0]?.length,
+    });
+  } catch (err) {
+    console.error("[zones] polygon save failed", err);
+    return { ok: false, error: "Could not save that shape — try redrawing it." };
+  }
+  revalidatePath("/manager/settings/zones");
+  return { ok: true };
+}
+
+export async function removeZonePolygon(polygonId: string): Promise<ActionResult> {
+  const session = await requireOwner();
+  const parsed = z.uuid().safeParse(polygonId);
+  if (!parsed.success) return { ok: false, error: "Invalid polygon id." };
+  await deleteZonePolygon(getDb(), parsed.data);
+  await audit(session.user.id, "settings.zone_polygon_removed", "service_zone_polygon", parsed.data);
   revalidatePath("/manager/settings/zones");
   return { ok: true };
 }

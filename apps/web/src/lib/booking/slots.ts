@@ -6,6 +6,7 @@ import {
   loadSchedulingConfig,
   loadTeamContext,
   requiredSkillForServiceType,
+  travelFnForLocation,
 } from "@/lib/scheduling-server";
 import { issueSlotToken } from "./slot-token";
 import { offeredWindows, type BookableWindow } from "./windows";
@@ -33,6 +34,7 @@ export async function bookableWindows(input: {
       input.serviceTypeSlug,
     );
     const team = await loadTeamContext({ days: config.bookingHorizonDays });
+    const travelMinutes = await travelFnForLocation(input.location ?? null, team);
     const candidates = generateCandidates(
       {
         durationMinutes,
@@ -42,7 +44,7 @@ export async function bookableWindows(input: {
         urgency: input.urgency,
       },
       team,
-      { ...options, maxCandidatesPerTechnician: 48 },
+      { ...options, travelMinutes, maxCandidatesPerTechnician: 48 },
     );
 
     if (candidates.length === 0) {

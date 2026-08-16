@@ -19,6 +19,11 @@ export {
   updateAppointmentStatus,
 } from "./operations/schedule";
 export {
+  deleteZonePolygon,
+  insertZonePolygon,
+  listZonePolygons,
+} from "./operations/zone-polygons";
+export {
   billingForWorkOrder,
   decideEstimate,
   recordInvoicePayment,

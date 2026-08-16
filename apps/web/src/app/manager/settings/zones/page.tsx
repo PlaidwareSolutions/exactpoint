@@ -12,11 +12,18 @@ export default async function ZonesSettingsPage() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate">
-        ZIP membership drives zone classification today; polygon boundaries can
-        be drawn once Google Maps keys are configured. Each ZIP belongs to one
-        zone.
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-slate">
+          Polygon boundaries (drawn on the map) classify addresses first; ZIP
+          membership is the fallback. Each ZIP belongs to one zone.
+        </p>
+        <a
+          href="/manager/settings/zones/map"
+          className="shrink-0 rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white hover:bg-navy-soft"
+        >
+          Draw boundaries →
+        </a>
+      </div>
       <div className="grid gap-3 lg:grid-cols-2">
         {zones.map((zone) => (
           <ZoneCard

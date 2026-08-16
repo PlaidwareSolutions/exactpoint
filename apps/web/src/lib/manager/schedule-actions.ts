@@ -18,9 +18,9 @@ import { validateAssignment, ymdInTimeZone } from "@exactpoint/scheduling";
 import { BUSINESS } from "@exactpoint/domain";
 import { requireOwner } from "@/lib/session";
 import {
-  estimateTravelMinutes,
   loadTeamContext,
   requiredSkillForServiceType,
+  travelFnForLocation,
 } from "@/lib/scheduling-server";
 import { serviceRequestDetail } from "./queries";
 
@@ -67,15 +67,18 @@ export async function assignRequest(input: unknown): Promise<ActionResult> {
   const tech = team.find((t) => t.id === technicianId);
   if (!tech) return { ok: false, error: "Technician not found." };
   const day = tech.days[0];
+  const location =
+    detail.address.latitude != null && detail.address.longitude != null
+      ? { latitude: detail.address.latitude, longitude: detail.address.longitude }
+      : null;
+  const travelMinutes = await travelFnForLocation(location, team);
   const check = validateAssignment(
     tech,
     day,
     { start, end },
     skillSlug,
-    { travelMinutes: estimateTravelMinutes },
-    detail.address.latitude != null && detail.address.longitude != null
-      ? { latitude: detail.address.latitude, longitude: detail.address.longitude }
-      : null,
+    { travelMinutes },
+    location,
   );
   if (!check.ok) return { ok: false, error: check.blockers.join(" · ") };
 

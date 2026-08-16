@@ -8,7 +8,7 @@ import {
   routeTravel,
   type RouteStopInput,
 } from "@exactpoint/scheduling";
-import { estimateTravelMinutes } from "@/lib/scheduling-server";
+import { travelFnForStops } from "@/lib/scheduling-server";
 import { activeTechnicians, appointmentsForDay, todayYmd } from "@/lib/manager/queries";
 import { AcceptRouteButton } from "./accept-button";
 
@@ -36,6 +36,11 @@ export default async function RoutesPage({
     .from(dailyRoutes)
     .where(and(eq(dailyRoutes.routeDate, ymd)));
 
+  const allLocated = appts
+    .filter((a) => a.latitude != null && a.longitude != null)
+    .map((a) => ({ latitude: a.latitude!, longitude: a.longitude! }));
+  const travelMinutes = await travelFnForStops(allLocated);
+
   const sections = team
     .filter((t) => t.isActive)
     .map((tech) => {
@@ -56,9 +61,9 @@ export default async function RoutesPage({
       }));
       const current = routeTravel(
         [...stops].sort((a, b) => a.start.getTime() - b.start.getTime()),
-        estimateTravelMinutes,
+        travelMinutes,
       );
-      const recommended = recommendStopOrder(stops, estimateTravelMinutes);
+      const recommended = recommendStopOrder(stops, travelMinutes);
       const savings = current.totalTravelMinutes - recommended.totalTravelMinutes;
       const approved = approvedRoutes.find((r) => r.technicianId === tech.id);
       return { tech, jobs, byId, current, recommended, savings, approved };

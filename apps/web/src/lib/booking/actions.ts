@@ -16,7 +16,8 @@ import {
   toEwktPoint,
 } from "@exactpoint/db";
 import { BUSINESS } from "@exactpoint/domain";
-import { StubAddressProvider, type ValidatedAddress } from "@exactpoint/maps";
+import type { ValidatedAddress } from "@exactpoint/maps";
+import { addressProvider } from "@/lib/geo";
 import {
   classifyZoneForPoint,
   createSlotHold,
@@ -29,9 +30,6 @@ import { addressInputSchema, bookingSchema } from "./schema";
 import { rateLimit } from "./rate-limit";
 import { bookableWindows, type BookableWindow } from "./slots";
 import { verifySlotToken } from "./slot-token";
-
-/** Google Address Validation replaces the stub in Phase 6 (spec §9, §84). */
-const addressProvider = new StubAddressProvider();
 
 async function clientIp(): Promise<string> {
   const h = await headers();

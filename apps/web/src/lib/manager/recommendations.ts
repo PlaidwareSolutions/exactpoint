@@ -6,6 +6,7 @@ import {
   loadSchedulingConfig,
   loadTeamContext,
   requiredSkillForServiceType,
+  travelFnForLocation,
 } from "@/lib/scheduling-server";
 import { serviceRequestDetail } from "./queries";
 
@@ -57,21 +58,23 @@ export async function recommendationsForRequest(
     customerId: detail.request.customerId,
   });
   const byId = new Map(team.map((t) => [t.id, t]));
+  const location =
+    detail.address.latitude != null && detail.address.longitude != null
+      ? { latitude: detail.address.latitude, longitude: detail.address.longitude }
+      : null;
+  const travelMinutes = await travelFnForLocation(location, team);
 
   const candidates = generateCandidates(
     {
       durationMinutes,
       requiredSkillSlug: skillSlug,
       zoneId: detail.address.zoneId,
-      location:
-        detail.address.latitude != null && detail.address.longitude != null
-          ? { latitude: detail.address.latitude, longitude: detail.address.longitude }
-          : null,
+      location,
       urgency: detail.request.urgency,
       preferredWindows: undefined,
     },
     team,
-    { ...options, maxCandidatesPerTechnician: 12 },
+    { ...options, travelMinutes, maxCandidatesPerTechnician: 12 },
   );
 
   // Best candidate per technician+day so the list shows variety, not one

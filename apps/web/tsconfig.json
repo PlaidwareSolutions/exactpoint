@@ -6,7 +6,7 @@
     "allowJs": true,
     "incremental": true,
     "module": "esnext",
-    "types": ["node"],
+    "types": ["node", "google.maps"],
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"]
