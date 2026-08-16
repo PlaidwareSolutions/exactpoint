@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 120" role="img" aria-label="ExactPoint concept 3 — gauge needle">
+  <!-- Concept 3 · "On the Mark" — a service gauge whose needle lands exactly
+       on the point. Speaks to HVAC gauges and diagnostic precision. -->
+  <g fill="none" stroke="#16233B" stroke-linecap="round">
+    <path d="M18 80 a44 44 0 0 1 68 -37" stroke-width="8"/>
+    <line x1="24" y1="55" x2="30" y2="59" stroke-width="4.5"/>
+    <line x1="40" y1="40" x2="44" y2="46" stroke-width="4.5"/>
+    <line x1="61" y1="34" x2="62" y2="41" stroke-width="4.5"/>
+  </g>
+  <line x1="60" y1="82" x2="90" y2="52" stroke="#F26A21" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="60" cy="82" r="9" fill="#16233B"/>
+  <circle cx="96" cy="46" r="7.5" fill="#F26A21"/>
+  <g font-family="'Avenir Next','Helvetica Neue',Arial,sans-serif">
+    <text x="140" y="66" font-size="44" font-weight="800" letter-spacing="2" fill="#16233B">EXACTPOINT</text>
+    <text x="142" y="98" font-size="19" font-weight="600" letter-spacing="7.5" fill="#5B6B85">APPLIANCE &amp; HVAC</text>
+  </g>
+</svg>

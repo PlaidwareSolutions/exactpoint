@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 120" role="img" aria-label="ExactPoint concept 1 — reticle point">
+  <!-- Concept 1 · "Reticle Point" — the O of POINT is a precision reticle.
+       Mark also reads as a thermostat dial. Accent dot = the exact point. -->
+  <g fill="none" stroke="#16233B" stroke-width="7" stroke-linecap="round">
+    <circle cx="60" cy="60" r="34"/>
+    <line x1="60" y1="10" x2="60" y2="24"/>
+    <line x1="60" y1="96" x2="60" y2="110"/>
+    <line x1="10" y1="60" x2="24" y2="60"/>
+    <line x1="96" y1="60" x2="110" y2="60"/>
+  </g>
+  <circle cx="60" cy="60" r="11" fill="#F26A21"/>
+  <g font-family="'Avenir Next','Helvetica Neue',Arial,sans-serif">
+    <text x="140" y="66" font-size="44" font-weight="800" letter-spacing="2" fill="#16233B">EXACTPOINT</text>
+    <text x="142" y="98" font-size="19" font-weight="600" letter-spacing="7.5" fill="#5B6B85">APPLIANCE &amp; HVAC</text>
+  </g>
+</svg>

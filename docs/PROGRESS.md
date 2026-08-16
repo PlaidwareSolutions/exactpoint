@@ -11,7 +11,8 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 - Worker: pg-boss with per-minute expired-hold reaper.
 - Scheduling package: interval math + hard-constraint predicates (Tests A/B/C/E at logic level; A/B/J at DB level).
 
-Remaining for M1 review: Railway staging deploy · logo concepts (2–3) · owner review.
+- Logo concepts (3) created under docs/brand/concepts/ — awaiting owner selection.
+- **Railway staging deploy blocked**: the token supplied 2026-08-15 fails authentication against both the account API and project-token endpoints (verified via CLI and GraphQL). Needs a re-issued token — an *Account token* (Railway → Account Settings → Tokens, no workspace scope) is preferred so the project can be created and configured end-to-end.
 
 ## Upcoming
 
