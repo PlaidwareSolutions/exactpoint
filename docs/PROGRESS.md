@@ -57,6 +57,10 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - 22 owner-supplied job photos web-optimized into Our Work (4 categories), About (owner portrait + at-work shots), and a homepage real-jobs band. A stock composite in the batch was excluded. Originals stay local (photos-inbox/, gitignored). Still open when supplied: licensing/insurance facts, testimonials.
 
+## Owner access & operations round — ✅ live 2026-08-16
+
+- Footer Team Sign-in link; change-password page; forgot/reset-password via the live email pipeline. Phone-intake New Booking in the Manager (find-or-create by phone, source "phone", hands off to recommendations). Calendar shows time-off/blocked segments; Block Time control (tech or company); job-page cross-day Reschedule. 26 E2E green (suite serialized — shared DB fixtures).
+
 ## Post-launch backlog
 
 - Turnstile activation (needs token permission or dashboard-created widget keys).
