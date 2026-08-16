@@ -1,11 +1,34 @@
 @import "tailwindcss";
 
+/* ExactPoint design system — derived from the EP Badge mark.
+   Navy carries trust and steel; the point orange is spent sparingly:
+   the badge counter, primary CTAs, and moments of emphasis. */
+@theme {
+  --color-navy: #16233b;
+  --color-navy-deep: #0e1626;
+  --color-navy-soft: #24344f;
+  --color-point: #f26a21;
+  --color-point-deep: #d9560f;
+  --color-slate: #5b6b85;
+  --color-mist: #f4f6f9;
+  --color-line: #dde3ec;
+
+  --font-sans: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: var(--color-mist);
+  --foreground: var(--color-navy);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }

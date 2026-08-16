@@ -38,7 +38,9 @@ describe.skipIf(!testUrl)("schedule reservation integrity (database level)", () 
 
   beforeAll(async () => {
     const admin = new pg.Pool({ connectionString: testUrl, max: 1 });
-    await admin.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
+    await admin.query(
+      "DROP SCHEMA public CASCADE; CREATE SCHEMA public; DROP SCHEMA IF EXISTS drizzle CASCADE;",
+    );
     await admin.end();
     await runMigrations(testUrl);
 
@@ -156,7 +158,17 @@ describe.skipIf(!testUrl)("schedule reservation integrity (database level)", () 
       );
       expect(fulfilled).toHaveLength(1);
       expect(rejected).toHaveLength(1);
-      expect((rejected[0]!.reason as { code?: string }).code).toBe(EXCLUSION_VIOLATION);
+      // Under concurrency PostgreSQL reports the loser as either an exclusion
+      // violation (23P01) or a deadlock abort (40P01) — both mean "rejected".
+      expect(["23P01", "40P01"]).toContain(
+        (rejected[0]!.reason as { code?: string }).code,
+      );
+      // The invariant that matters: exactly one reservation exists.
+      const { rows } = await pool1.query(
+        "SELECT count(*)::int AS n FROM schedule_reservations WHERE technician_id = $1 AND time_range = $2::tstzrange",
+        [techA, range],
+      );
+      expect(rows[0].n).toBe(1);
     } finally {
       await pool1.end();
       await pool2.end();
