@@ -1,0 +1,25 @@
+{
+  "name": "exactpoint",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @exactpoint/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @exactpoint/db generate",
+    "db:migrate": "pnpm --filter @exactpoint/db migrate",
+    "db:seed": "pnpm --filter @exactpoint/db seed && pnpm --filter @exactpoint/web seed:users"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.23.0",
+    "eslint": "^9.23.0",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.29.0"
+  }
+}
