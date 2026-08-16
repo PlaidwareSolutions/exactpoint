@@ -37,6 +37,10 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - Estimate editor on the manager job page (parts/labor lines, live totals, tax), audited customer approve/decline, automatic invoice issuance (approved → fee waived + tax; declined → $80 diagnostic only), Zelle/cash/check payment recording, printable INV-#### invoices, receipt email on payment. No card processing (§87). 58 unit/integration tests green.
 
+## Domain launch — ✅ exactpointrepairs.com LIVE 2026-08-16
+
+- Apex + www verified and serving with valid Let's Encrypt certificates (auto-renewed by Railway). Root cause of the day-long stall: Railway requires a `_railway-verify` TXT record the API's record list doesn't surface — see DEPLOYMENT.md.
+
 ## Google Maps Platform — ✅ live 2026-08-16
 
 - Address Validation (rooftop geocodes) + Routes API drive times power booking, recommendations, assignment checks, and Optimize Day (batched matrix, 15-min cache, haversine fallback). `/manager/map` day view and polygon boundary drawing (Settings → Service Zones → Draw boundaries) active; polygon-first classification live.
