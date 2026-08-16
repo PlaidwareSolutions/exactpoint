@@ -45,9 +45,13 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - Address Validation (rooftop geocodes) + Routes API drive times power booking, recommendations, assignment checks, and Optimize Day (batched matrix, 15-min cache, haversine fallback). `/manager/map` day view and polygon boundary drawing (Settings → Service Zones → Draw boundaries) active; polygon-first classification live.
 
+## R2 media storage — ✅ live 2026-08-16
+
+- Booking and job photos now persist in the `exactpoint-media` R2 bucket (S3 API, private, random keys); local-disk fallback remains for keyless dev. Round-trip verified.
+
 ## Post-launch backlog
 
-- R2 storage swap for durable photos; Turnstile activation; email provider credentials.
+- Turnstile activation; email provider credentials.
 - Real job photos + Our Work gallery; testimonials/licensing when supplied.
 - Future phases: online payments, advanced dispatch (spec §87–88).
 
