@@ -15,6 +15,7 @@
   "dependencies": {
     "@exactpoint/config": "workspace:*",
     "@exactpoint/domain": "workspace:*",
+    "@exactpoint/scheduling": "workspace:^",
     "drizzle-orm": "^0.45.2",
     "pg": "^8.14.1"
   },

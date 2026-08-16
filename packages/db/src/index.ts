@@ -3,6 +3,22 @@ export { createDb, getDb, type Database } from "./client";
 export { runMigrations } from "./migrate";
 export { expireSlotHolds } from "./operations/slot-holds";
 export {
+  classifyZoneForPoint,
+  loadSchedulingContext,
+  parseTstzRange,
+  type LoadedTechnician,
+} from "./operations/scheduling-context";
+export {
+  addScheduleBlock,
+  addTimeOff,
+  createSlotHold,
+  isReservationConflict,
+  reassignAppointment,
+  ScheduleConflictError,
+  scheduleAppointment,
+  updateAppointmentStatus,
+} from "./operations/schedule";
+export {
   toTstzRange,
   toEwktPoint,
   tstzrange,
