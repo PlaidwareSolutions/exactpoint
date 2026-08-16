@@ -44,6 +44,10 @@ export default async function TechTodayPage() {
           <h1 className="text-xl font-extrabold text-navy">Today</h1>
           <p className="text-sm text-slate">
             {profile ? `${profile.firstName} ${profile.lastName}`.trim() : session.user.email}
+            {" · "}
+            <Link href="/account/password" className="font-semibold text-point">
+              password
+            </Link>
           </p>
         </div>
         <SignOutButton />

@@ -63,6 +63,22 @@ export function renderEmail(
           `— ${business.displayName}`,
         ].join("\n"),
       };
+    case "password_reset":
+      return {
+        to: recipient,
+        subject: `${business.displayName} — reset your password`,
+        text: [
+          `Hi ${first},`,
+          "",
+          "A password reset was requested for your ExactPoint team account.",
+          "Set a new password here (link expires in 1 hour):",
+          "",
+          str(payload, "resetUrl"),
+          "",
+          "If you didn't request this, you can ignore this email — your password is unchanged.",
+          `— ${business.displayName}`,
+        ].join("\n"),
+      };
     case "invoice_receipt":
       return {
         to: recipient,

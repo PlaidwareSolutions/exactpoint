@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { appointmentDetail, billingForWorkOrder, getDb } from "@exactpoint/db";
 import { BUSINESS } from "@exactpoint/domain";
+import { activeTechnicians } from "@/lib/manager/queries";
 import { BillingPanel } from "./billing-panel";
+import { RescheduleForm } from "./reschedule-form";
 import { StatusControls } from "./status-controls";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +18,21 @@ const fmt = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
 });
 
+/** Formats an instant as a datetime-local value in the business timezone. */
+function toDatetimeLocal(instant: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BUSINESS.timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(instant);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
 export default async function ManagerJobPage({
   params,
 }: {
@@ -26,6 +43,11 @@ export default async function ManagerJobPage({
   const job = await appointmentDetail(db, id);
   if (!job) notFound();
   const billing = await billingForWorkOrder(db, job.workOrderId);
+  const team = (await activeTechnicians()).filter((t) => t.isActive);
+  const lead = job.assignments[0] ?? null;
+  const startLocalValue = lead
+    ? toDatetimeLocal(lead.scheduledStart)
+    : toDatetimeLocal(job.windowStart);
 
   return (
     <div className="space-y-5">
@@ -159,6 +181,19 @@ export default async function ManagerJobPage({
           })),
         }}
       />
+
+      {!["completed", "cancelled", "customer_declined", "no_show"].includes(job.status) && (
+        <RescheduleForm
+          appointmentId={job.appointmentId}
+          currentTechnicianId={lead?.technicianId ?? null}
+          durationMinutes={job.durationMinutes}
+          startLocalValue={startLocalValue}
+          technicians={team.map((t) => ({
+            id: t.id,
+            name: `${t.firstName} ${t.lastName}`.trim(),
+          }))}
+        />
+      )}
 
       <StatusControls appointmentId={job.appointmentId} status={job.status} />
     </div>

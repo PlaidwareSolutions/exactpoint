@@ -5,7 +5,7 @@ import { createAccessControl } from "better-auth/plugins/access";
 import { adminAc, defaultStatements } from "better-auth/plugins/admin/access";
 import { loadEnv } from "@exactpoint/config";
 import * as schema from "@exactpoint/db";
-import { getDb } from "@exactpoint/db";
+import { enqueueEmail, getDb } from "@exactpoint/db";
 
 const env = loadEnv();
 
@@ -35,6 +35,15 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
+    // Reset emails ride the existing queue → worker → Resend pipeline.
+    sendResetPassword: async ({ user, url }) => {
+      await enqueueEmail(getDb(), {
+        template: "password_reset",
+        recipient: user.email,
+        payload: { firstName: user.name?.split(" ")[0] ?? "there", resetUrl: url },
+      });
+    },
+    resetPasswordTokenExpiresIn: 60 * 60, // 1 hour
   },
   session: {
     expiresIn: 60 * 60 * 24 * 14, // 14 days

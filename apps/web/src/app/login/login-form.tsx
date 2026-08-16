@@ -8,6 +8,7 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const denied = searchParams.get("denied");
+  const reset = searchParams.get("reset");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +43,11 @@ export function LoginForm() {
           You don&apos;t have access to that area.
         </p>
       )}
+      {reset && (
+        <p className="rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-700">
+          Password updated — sign in with your new password.
+        </p>
+      )}
       {error && (
         <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p>
       )}
@@ -74,6 +80,11 @@ export function LoginForm() {
       >
         {submitting ? "Signing in…" : "Sign in"}
       </button>
+      <p className="text-center text-sm">
+        <a href="/forgot-password" className="font-semibold text-point hover:underline">
+          Forgot password?
+        </a>
+      </p>
     </form>
   );
 }

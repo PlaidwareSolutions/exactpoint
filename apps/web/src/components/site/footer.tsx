@@ -56,6 +56,11 @@ export function SiteFooter() {
             <li><Link href="/service-areas" className="hover:text-point">Service Areas</Link></li>
             <li><Link href="/policies/service-warranty" className="hover:text-point">Service &amp; Warranty Policy</Link></li>
             <li><Link href="/policies/privacy" className="hover:text-point">Privacy Policy</Link></li>
+            <li>
+              <Link href="/login" className="text-white/60 hover:text-point">
+                Team Sign-in
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

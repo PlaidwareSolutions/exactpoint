@@ -5,6 +5,7 @@ const TABS = [
   { href: "/manager/settings/scheduling", label: "Scheduling" },
   { href: "/manager/settings/services", label: "Services" },
   { href: "/manager/settings/zones", label: "Service Zones" },
+  { href: "/account/password", label: "Password" },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

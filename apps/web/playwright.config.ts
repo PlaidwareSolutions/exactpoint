@@ -6,6 +6,9 @@ dotenv({ path: "../../.env" });
 export default defineConfig({
   testDir: "./e2e",
   timeout: 45_000,
+  // Suites share one database and fixture users (e.g. the password-change
+  // test rotates a login other suites use) — run files serially.
+  workers: 1,
   use: {
     baseURL: "http://localhost:3000",
   },

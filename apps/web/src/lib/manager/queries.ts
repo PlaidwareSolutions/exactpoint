@@ -6,6 +6,8 @@ import {
   customers,
   getDb,
   mediaAssets,
+  parseTstzRange,
+  scheduleReservations,
   serviceRequests,
   serviceTypes,
   serviceZones,
@@ -63,6 +65,44 @@ export async function appointmentsForDay(ymd: string) {
     )
     .where(and(gte(appointments.windowStart, start), lt(appointments.windowStart, end)))
     .orderBy(asc(appointments.windowStart));
+}
+
+export interface BusySegment {
+  technicianId: string;
+  kind: "time_off" | "block";
+  startIso: string;
+  endIso: string;
+}
+
+/** Time-off/blocked reservations for a day so the calendar can show them. */
+export async function nonAppointmentReservationsForDay(ymd: string): Promise<BusySegment[]> {
+  const db = getDb();
+  const { start, end } = dayRangeUtc(ymd);
+  const rows = await db
+    .select({
+      technicianId: scheduleReservations.technicianId,
+      kind: scheduleReservations.kind,
+      timeRange: scheduleReservations.timeRange,
+    })
+    .from(scheduleReservations)
+    .where(
+      and(
+        inArray(scheduleReservations.kind, ["time_off", "block"]),
+        sql`${scheduleReservations.timeRange} && tstzrange(${start.toISOString()}, ${end.toISOString()})`,
+      ),
+    );
+  return rows.flatMap((r) => {
+    const range = parseTstzRange(r.timeRange);
+    if (!range) return [];
+    return [
+      {
+        technicianId: r.technicianId,
+        kind: r.kind as "time_off" | "block",
+        startIso: range.start.toISOString(),
+        endIso: range.end.toISOString(),
+      },
+    ];
+  });
 }
 
 export async function activeTechnicians() {

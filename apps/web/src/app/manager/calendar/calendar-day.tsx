@@ -24,14 +24,23 @@ const SLOT_PX = 44;
  * (spec §21). Drop targets are (technician, half-hour). The server validates
  * every move; the exclusion constraint has the final word.
  */
+interface BusySegment {
+  technicianId: string;
+  kind: "time_off" | "block";
+  startIso: string;
+  endIso: string;
+}
+
 export function CalendarDay({
   dayStartIso,
   technicians,
   appointments,
+  busySegments = [],
 }: {
   dayStartIso: string;
   technicians: { id: string; name: string; color: string }[];
   appointments: CalendarAppointment[];
+  busySegments?: BusySegment[];
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +126,33 @@ export function CalendarDay({
                   style={{ top: i * SLOT_PX, height: SLOT_PX }}
                 />
               ))}
+              {busySegments
+                .filter((b) => b.technicianId === t.id)
+                .map((b, i) => {
+                  const start = new Date(b.startIso).getTime();
+                  const end = new Date(b.endIso).getTime();
+                  const top = ((start - dayStart) / 60_000 / SLOT_MINUTES) * SLOT_PX;
+                  const bottom = ((end - dayStart) / 60_000 / SLOT_MINUTES) * SLOT_PX;
+                  const clampedTop = Math.max(top, 0);
+                  const height = Math.min(bottom, SLOTS * SLOT_PX) - clampedTop;
+                  if (height <= 0) return null;
+                  return (
+                    <div
+                      key={`busy-${i}`}
+                      className="pointer-events-none absolute inset-x-0.5 z-0 flex items-start justify-center rounded bg-slate/15"
+                      style={{
+                        top: clampedTop,
+                        height,
+                        backgroundImage:
+                          "repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(91,107,133,0.15) 6px, rgba(91,107,133,0.15) 12px)",
+                      }}
+                    >
+                      <span className="mt-1 rounded bg-white/80 px-1.5 text-[10px] font-bold uppercase tracking-wide text-slate">
+                        {b.kind === "time_off" ? "Time off" : "Blocked"}
+                      </span>
+                    </div>
+                  );
+                })}
               {appointments
                 .filter((a) => a.technicianId === t.id)
                 .map((a) => {

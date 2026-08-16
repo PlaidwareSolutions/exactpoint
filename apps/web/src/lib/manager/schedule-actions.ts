@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import {
+  addScheduleBlock,
   enqueueEmail,
   getDb,
   reassignAppointment,
@@ -181,6 +182,40 @@ export async function setAppointmentStatus(input: unknown): Promise<ActionResult
   });
   revalidatePath("/manager");
   return { ok: true };
+}
+
+const blockSchema = z.object({
+  technicianId: z.uuid().nullable(), // null = whole company
+  startIso: z.iso.datetime(),
+  endIso: z.iso.datetime(),
+  reason: z.string().max(200).optional(),
+});
+
+/** Spec §27 blocks: technician or whole company; conflicts reported back. */
+export async function blockTimeAction(
+  input: unknown,
+): Promise<ActionResult & { conflicts?: number }> {
+  const session = await requireOwner();
+  const parsed = blockSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid block input." };
+  const start = new Date(parsed.data.startIso);
+  const end = new Date(parsed.data.endIso);
+  if (end <= start) return { ok: false, error: "End must be after start." };
+  const result = await addScheduleBlock(getDb(), {
+    technicianId: parsed.data.technicianId,
+    start,
+    end,
+    reason: parsed.data.reason,
+    createdBy: session.user.id,
+  });
+  revalidatePath("/manager/calendar");
+  if (result.blocked === 0) {
+    return {
+      ok: false,
+      error: "No technician could be blocked — every schedule conflicts with existing appointments.",
+    };
+  }
+  return { ok: true, conflicts: result.conflicts.length };
 }
 
 const requestStatusSchema = z.object({

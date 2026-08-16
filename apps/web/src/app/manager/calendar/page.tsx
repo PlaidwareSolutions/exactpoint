@@ -4,8 +4,10 @@ import { addDays, zonedTimeToUtc } from "@exactpoint/scheduling";
 import {
   activeTechnicians,
   appointmentsForDay,
+  nonAppointmentReservationsForDay,
   todayYmd,
 } from "@/lib/manager/queries";
+import { BlockTimeButton } from "./block-time-button";
 import { CalendarDay } from "./calendar-day";
 
 export const metadata = { title: "Calendar" };
@@ -73,11 +75,23 @@ export default async function CalendarPage({
     );
   }
 
-  const appts = await appointmentsForDay(ymd);
+  const [appts, busy] = await Promise.all([
+    appointmentsForDay(ymd),
+    nonAppointmentReservationsForDay(ymd),
+  ]);
   const dayStartUtc = zonedTimeToUtc(ymd, "07:00", BUSINESS.timezone);
   return (
     <div className="space-y-4">
-      <Header ymd={ymd} view={view} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Header ymd={ymd} view={view} />
+        <BlockTimeButton
+          ymd={ymd}
+          technicians={team.map((t) => ({
+            id: t.id,
+            name: `${t.firstName} ${t.lastName}`.trim(),
+          }))}
+        />
+      </div>
       <CalendarDay
         dayStartIso={dayStartUtc.toISOString()}
         technicians={team.map((t) => ({
@@ -97,6 +111,7 @@ export default async function CalendarPage({
             sub: `${a.city}${a.zoneName ? ` · ${a.zoneName}` : ""}`,
             status: a.status,
           }))}
+        busySegments={busy}
       />
     </div>
   );

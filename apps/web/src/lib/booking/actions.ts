@@ -4,29 +4,25 @@ import { headers } from "next/headers";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import {
   auditLogs,
+  createSlotHold,
   customerAddresses,
   customers,
   getDb,
   mediaAssets,
   notifications,
+  ScheduleConflictError,
+  scheduleAppointment,
   serviceRequests,
   serviceTypes,
-  serviceZones,
   serviceZoneZips,
   toEwktPoint,
 } from "@exactpoint/db";
 import { BUSINESS } from "@exactpoint/domain";
-import type { ValidatedAddress } from "@exactpoint/maps";
 import { addressProvider } from "@/lib/geo";
-import {
-  classifyZoneForPoint,
-  createSlotHold,
-  ScheduleConflictError,
-  scheduleAppointment,
-} from "@exactpoint/db";
+import { checkAddress, type AddressCheck } from "@/lib/address-check";
 import { zonedTimeToUtc } from "@exactpoint/scheduling";
 import { loadSchedulingConfig, requiredSkillForServiceType } from "@/lib/scheduling-server";
-import { addressInputSchema, bookingSchema } from "./schema";
+import { bookingSchema } from "./schema";
 import { rateLimit } from "./rate-limit";
 import { bookableWindows, type BookableWindow } from "./slots";
 import { verifySlotToken } from "./slot-token";
@@ -36,60 +32,13 @@ async function clientIp(): Promise<string> {
   return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 }
 
-export interface AddressCheckResult {
-  ok: boolean;
-  confidence?: ValidatedAddress["confidence"];
-  standardized?: { street: string; unit?: string; city: string; state: string; zip: string };
-  zoneName?: string | null;
-  zoneId?: string | null;
-  latitude?: number;
-  longitude?: number;
-  message?: string;
-}
+export type AddressCheckResult = AddressCheck;
 
 export async function validateBookingAddress(input: unknown): Promise<AddressCheckResult> {
   if (!rateLimit(`addr:${await clientIp()}`, 30, 60 * 60 * 1000)) {
     return { ok: false, message: "Too many attempts. Please try again shortly." };
   }
-  const parsed = addressInputSchema.safeParse(input);
-  if (!parsed.success) {
-    return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the address fields." };
-  }
-
-  const validated = await addressProvider.validate(parsed.data);
-  if (validated.confidence === "unresolved") {
-    return {
-      ok: false,
-      confidence: "unresolved",
-      message: "We could not confirm this address. Please review it.",
-    };
-  }
-
-  const db = getDb();
-  const classified = await classifyZoneForPoint(db, {
-    latitude: validated.latitude,
-    longitude: validated.longitude,
-    zip: validated.standardized.zip,
-  });
-  const [zoneRow] = classified
-    ? await db
-        .select({ id: serviceZones.id, name: serviceZones.name })
-        .from(serviceZones)
-        .where(and(eq(serviceZones.id, classified.zoneId), eq(serviceZones.isActive, true)))
-    : [];
-
-  return {
-    ok: true,
-    confidence: validated.confidence,
-    standardized: validated.standardized,
-    zoneName: zoneRow?.name ?? null,
-    zoneId: zoneRow?.id ?? null,
-    latitude: validated.latitude,
-    longitude: validated.longitude,
-    message: zoneRow
-      ? undefined
-      : `This address may be outside our normal service area. Please call ${BUSINESS.phone} so we can check availability.`,
-  };
+  return checkAddress(input);
 }
 
 export interface OfferedSlotsResult {
