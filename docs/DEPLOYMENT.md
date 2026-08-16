@@ -16,7 +16,8 @@
 
 ## Production domain
 
-- `exactpointrepairs.com` and `www` are Railway custom domains on the `web` service; Cloudflare CNAMEs (apex → `nuoi9xnd.up.railway.app`, www → `bo9096i7.up.railway.app`).
+- `exactpointrepairs.com` and `www` are Railway custom domains on the `web` service; Cloudflare CNAMEs (apex → `fvmkyoev.up.railway.app`, www → `ukmekgv3.up.railway.app`; targets are per-domain and change if a custom domain is deleted and recreated — always update DNS to match).
+- If certificate issuance sticks in "validating ownership" for over an hour with correct, propagated DNS-only records, delete and recreate the custom domain to restart Railway's validation workflow (this happened at first launch).
 - **Validation order matters**: Railway validates ownership by resolving the public record and comparing it to its target. Records must be **DNS-only (grey cloud) until Railway's certificate is issued** — with the proxy on, public DNS shows only Cloudflare IPs (`currentValue` comes back empty in Railway's checker) and validation stalls indefinitely. After the certificate is issued and the site serves, the proxy *may* be enabled (zone SSL/TLS is already "Full"; never "Full (strict)" — the origin cert is `*.up.railway.app`).
 - `BETTER_AUTH_URL=https://exactpointrepairs.com`; auth trusted origins also cover www, the railway.app subdomain, and localhost.
 - Email sending activates when `RESEND_API_KEY` + `EMAIL_FROM` are set on the worker; until then notifications log to the worker console and stay marked sent.
