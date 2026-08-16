@@ -33,6 +33,10 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 - Routes + Optimize Day (owner-approved, windows never moved); technician PWA with full field flow and own-jobs-only privacy; completion → 2-month warranty records + possible-callback flags; worker email notifications behind EmailProvider (Resend-ready, console until credentials); LocalBusiness JSON-LD; PWA manifest; **exactpointrepairs.com + www live on Railway with Cloudflare DNS**.
 - 53 unit/integration + 18 E2E tests green.
 
+## Estimates & Invoices (spec §85–86 future phase) — ✅ code complete 2026-08-16
+
+- Estimate editor on the manager job page (parts/labor lines, live totals, tax), audited customer approve/decline, automatic invoice issuance (approved → fee waived + tax; declined → $80 diagnostic only), Zelle/cash/check payment recording, printable INV-#### invoices, receipt email on payment. No card processing (§87). 58 unit/integration tests green.
+
 ## Post-launch backlog
 
 - Google Maps keys → real drive times (Routes API), polygon drawing, tile map view.
