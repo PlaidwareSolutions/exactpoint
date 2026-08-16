@@ -64,6 +64,7 @@ await boss.work(SEND_NOTIFICATIONS, async () => {
       (notification.payload as Record<string, unknown>) ?? {},
       { displayName: BUSINESS.displayName, phone: BUSINESS.phone },
     );
+    if (process.env.EMAIL_REPLY_TO) message.replyTo = process.env.EMAIL_REPLY_TO;
     const result = await email.send(message);
     await markNotification(db, notification.id, result);
   }

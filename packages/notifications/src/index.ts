@@ -3,6 +3,8 @@ export interface EmailMessage {
   subject: string;
   text: string;
   html?: string;
+  /** Where a customer's reply goes (e.g. the business inbox). */
+  replyTo?: string;
 }
 
 /** Vendor-neutral email interface (spec §84); a real provider plugs in at Phase 11. */
