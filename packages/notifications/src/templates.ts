@@ -79,6 +79,26 @@ export function renderEmail(
           `— ${business.displayName}`,
         ].join("\n"),
       };
+    case "invoice_issued":
+      return {
+        to: recipient,
+        subject: `${business.displayName} — invoice ${reference}`,
+        text: [
+          `Hi ${first},`,
+          "",
+          `Here is your invoice ${reference} from ${business.displayName}:`,
+          "",
+          str(payload, "linesText"),
+          "",
+          str(payload, "totalsText"),
+          "",
+          `Payment accepted by ${str(payload, "paymentMethods") || "Zelle, Cash, Check"}.`,
+          `Questions or ready to pay? Call ${business.phone}.`,
+          "",
+          "Completed repairs carry a two-month labor warranty on the specific work performed.",
+          `— ${business.displayName}`,
+        ].join("\n"),
+      };
     case "invoice_receipt":
       return {
         to: recipient,

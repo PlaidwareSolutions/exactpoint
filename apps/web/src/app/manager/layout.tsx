@@ -21,7 +21,7 @@ export default async function ManagerLayout({ children }: { children: React.Reac
   await requireOwner();
   return (
     <div className="min-h-screen bg-mist">
-      <header className="sticky top-0 z-40 border-b border-line bg-navy text-white">
+      <header className="sticky top-0 z-40 border-b border-line bg-navy text-white print:hidden">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4">
           <Link href="/manager" className="flex items-center gap-2.5">
             <LogoBadge size={30} />

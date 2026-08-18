@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import {
+  auditLogs,
   businessSettings,
   customers,
   decideEstimate,
   enqueueEmail,
+  estimateItems,
   getDb,
   invoices,
   recordInvoicePayment,
@@ -78,6 +80,73 @@ export async function decideEstimateAction(input: unknown): Promise<ActionResult
     return { ok: false, error: err instanceof Error ? err.message : "Could not record decision." };
   }
   revalidatePath("/manager/jobs");
+  return { ok: true };
+}
+
+/** Emails the invoice itself (before payment) to the customer on demand. */
+export async function emailInvoice(invoiceId: string): Promise<ActionResult> {
+  const session = await requireOwner();
+  const parsed = z.uuid().safeParse(invoiceId);
+  if (!parsed.success) return { ok: false, error: "Invalid invoice." };
+  const db = getDb();
+
+  const [invoice] = await db.select().from(invoices).where(eq(invoices.id, parsed.data));
+  if (!invoice) return { ok: false, error: "Invoice not found." };
+  const [customer] = await db
+    .select({ email: customers.email, firstName: customers.firstName })
+    .from(workOrders)
+    .innerJoin(customers, eq(workOrders.customerId, customers.id))
+    .where(eq(workOrders.id, invoice.workOrderId));
+  if (!customer?.email) {
+    return { ok: false, error: "This customer has no email on file." };
+  }
+
+  const items = invoice.estimateId
+    ? await db
+        .select()
+        .from(estimateItems)
+        .where(eq(estimateItems.estimateId, invoice.estimateId))
+        .orderBy(asc(estimateItems.sortOrder))
+    : [];
+  const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const lines: string[] = [];
+  if (invoice.diagnosticFeeCents > 0) {
+    lines.push(`  Diagnostic / service-call fee — ${money(invoice.diagnosticFeeCents)}`);
+  }
+  if (invoice.subtotalCents > 0) {
+    for (const item of items) {
+      lines.push(
+        `  ${item.description} (x${item.quantity}) — ${money(item.quantity * item.unitPriceCents)}`,
+      );
+    }
+  }
+  const totals: string[] = [];
+  if (invoice.subtotalCents > 0) {
+    totals.push(`Subtotal: ${money(invoice.subtotalCents)}`);
+    totals.push(`Tax: ${money(invoice.taxCents)}`);
+    totals.push("Diagnostic fee: waived");
+  }
+  totals.push(`Total due: ${money(invoice.totalCents)}`);
+
+  await enqueueEmail(db, {
+    template: "invoice_issued",
+    recipient: customer.email,
+    payload: {
+      firstName: customer.firstName,
+      reference: invoice.number,
+      linesText: lines.join("\n"),
+      totalsText: totals.join("\n"),
+      paymentMethods: "Zelle, Cash, Check",
+    },
+  });
+  await getDb().insert(auditLogs).values({
+    actorType: "user",
+    actorId: session.user.id,
+    action: "invoice.emailed",
+    entityType: "invoice",
+    entityId: invoice.id,
+    newValue: { number: invoice.number, recipient: customer.email },
+  });
   return { ok: true };
 }
 

@@ -10,6 +10,7 @@ import {
 } from "@exactpoint/db";
 import { BUSINESS, formatCents } from "@exactpoint/domain";
 import { LogoBadge } from "@/components/brand/logo";
+import { InvoiceActions } from "./invoice-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function InvoicePage({
       customerFirst: customers.firstName,
       customerLast: customers.lastName,
       customerPhone: customers.phone,
+      customerEmail: customers.email,
       street: customerAddresses.street,
       unit: customerAddresses.unit,
       city: customerAddresses.city,
@@ -46,6 +48,8 @@ export default async function InvoicePage({
     : [];
 
   return (
+    <>
+    <InvoiceActions invoiceId={invoice.id} customerEmail={order?.customerEmail ?? null} />
     <div className="mx-auto max-w-2xl rounded-xl border border-line bg-white p-8 print:border-0">
       <header className="flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -146,5 +150,6 @@ export default async function InvoicePage({
         performed. Thank you for choosing {BUSINESS.shortName}.
       </p>
     </div>
+    </>
   );
 }

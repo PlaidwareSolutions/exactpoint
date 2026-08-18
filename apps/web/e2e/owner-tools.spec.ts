@@ -95,6 +95,77 @@ test("help page serves the handbook to signed-in users only", async ({ page }) =
   );
 });
 
+test("estimate → approval → invoice → email, end to end", async ({ page }, testInfo) => {
+  const email = `billing-e2e-${testInfo.project.name}@example.com`;
+  const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  // Reset this project's fixture, then seed customer → work order → appointment.
+  await pool.query(
+    `WITH c AS (SELECT id FROM customers WHERE email = $1),
+     wo AS (SELECT id FROM work_orders WHERE customer_id IN (SELECT id FROM c)),
+     appt AS (SELECT id FROM appointments WHERE work_order_id IN (SELECT id FROM wo)),
+     est AS (SELECT id FROM estimates WHERE work_order_id IN (SELECT id FROM wo)),
+     d0 AS (DELETE FROM notifications WHERE recipient = $1),
+     d1 AS (DELETE FROM invoices WHERE work_order_id IN (SELECT id FROM wo)),
+     d2 AS (DELETE FROM estimate_items WHERE estimate_id IN (SELECT id FROM est)),
+     d3 AS (DELETE FROM estimates WHERE id IN (SELECT id FROM est)),
+     d4 AS (DELETE FROM job_status_history WHERE appointment_id IN (SELECT id FROM appt)),
+     d5 AS (DELETE FROM appointments WHERE id IN (SELECT id FROM appt)),
+     d6 AS (DELETE FROM work_orders WHERE id IN (SELECT id FROM wo)),
+     d7 AS (DELETE FROM customer_addresses WHERE customer_id IN (SELECT id FROM c))
+     DELETE FROM customers WHERE id IN (SELECT id FROM c)`,
+    [email],
+  );
+  const customer = await pool.query(
+    `INSERT INTO customers (first_name, last_name, phone, email)
+     VALUES ('Billing', 'Fixture', '7135550177', $1) RETURNING id`,
+    [email],
+  );
+  const address = await pool.query(
+    `INSERT INTO customer_addresses (customer_id, street, city, state, zip)
+     VALUES ($1, '9 Invoice Ln', 'Katy', 'TX', '77450') RETURNING id`,
+    [customer.rows[0].id],
+  );
+  const wo = await pool.query(
+    `INSERT INTO work_orders (customer_id, address_id, status) VALUES ($1, $2, 'scheduled') RETURNING id`,
+    [customer.rows[0].id, address.rows[0].id],
+  );
+  const appt = await pool.query(
+    `INSERT INTO appointments (work_order_id, window_start, window_end, duration_minutes, status)
+     VALUES ($1, now() + interval '90 days', now() + interval '90 days 3 hours', 90, 'confirmed') RETURNING id`,
+    [wo.rows[0].id],
+  );
+  const appointmentId = appt.rows[0].id;
+
+  await login(page, "info@exactpointrepairs.com", process.env.SEED_OWNER_PASSWORD ?? "");
+  await page.goto(`/manager/jobs/${appointmentId}`);
+
+  // Build and save the estimate.
+  await page.getByPlaceholder("Description").fill("Drain pump replacement");
+  await page.getByLabel("Unit price").fill("185.00");
+  await page.getByRole("button", { name: "Save estimate" }).click();
+  await expect(page.getByRole("button", { name: "Customer approved" })).toBeVisible();
+
+  // Approve → invoice issues with the fee waived.
+  await page.getByRole("button", { name: "Customer approved" }).click();
+  const invoiceLink = page.getByRole("link", { name: /INV-\d+/ });
+  await expect(invoiceLink).toBeVisible({ timeout: 15_000 });
+
+  // Open the invoice → print + email controls present; email it.
+  await invoiceLink.click();
+  await expect(page.getByRole("button", { name: "Print / Save PDF" })).toBeVisible();
+  await page.getByRole("button", { name: "Email invoice to customer" }).click();
+  await expect(page.getByText(`Invoice emailed to ${email}`)).toBeVisible({ timeout: 15_000 });
+
+  // The invoice email is queued with the line item and total.
+  const queued = await pool.query(
+    `SELECT payload FROM notifications WHERE recipient = $1 AND template = 'invoice_issued'`,
+    [email],
+  );
+  expect(queued.rowCount).toBe(1);
+  expect(JSON.stringify(queued.rows[0].payload)).toContain("Drain pump replacement");
+  await pool.end();
+});
+
 test("blocked time renders on the calendar", async ({ page }, testInfo) => {
   await login(page, "info@exactpointrepairs.com", process.env.SEED_OWNER_PASSWORD ?? "");
 
