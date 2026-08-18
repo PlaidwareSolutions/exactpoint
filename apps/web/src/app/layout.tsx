@@ -35,6 +35,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        {/* Belt-and-suspenders with HSTS: any document that somehow renders
+            over plain HTTP (stale tabs, cached entries) self-upgrades. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if(location.protocol==="http:"&&location.hostname!=="localhost"){location.replace(location.href.replace(/^http:/,"https:"))}`,
+          }}
+        />
+      </head>
       <body className="min-h-screen antialiased">{children}</body>
     </html>
   );

@@ -183,7 +183,30 @@ export async function serviceRequestDetail(id: string) {
     .select({ id: workOrders.id, status: workOrders.status })
     .from(workOrders)
     .where(eq(workOrders.serviceRequestId, id));
-  return { request, customer, address, serviceType, photos, relatedWorkOrders };
+  // Direct path to the scheduled job for converted requests.
+  const [relatedAppointment] =
+    relatedWorkOrders.length > 0
+      ? await db
+          .select({ id: appointments.id })
+          .from(appointments)
+          .where(
+            inArray(
+              appointments.workOrderId,
+              relatedWorkOrders.map((w) => w.id),
+            ),
+          )
+          .orderBy(desc(appointments.createdAt))
+          .limit(1)
+      : [];
+  return {
+    request,
+    customer,
+    address,
+    serviceType,
+    photos,
+    relatedWorkOrders,
+    relatedAppointmentId: relatedAppointment?.id ?? null,
+  };
 }
 
 /**

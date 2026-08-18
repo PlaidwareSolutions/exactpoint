@@ -15,12 +15,14 @@ export function AssignPanel({
   recommendations,
   durationMinutes,
   technicians,
+  jobHref,
 }: {
   requestId: string;
   requestStatus: string;
   recommendations: Recommendation[];
   durationMinutes: number;
   technicians: { id: string; name: string }[];
+  jobHref?: string | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -31,8 +33,18 @@ export function AssignPanel({
 
   if (requestStatus === "converted") {
     return (
-      <section className="rounded-xl border border-line bg-white p-5 text-sm text-slate">
-        This request has been scheduled — see the calendar.
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-white p-5 text-sm text-slate">
+        <span>This request has been scheduled.</span>
+        {jobHref ? (
+          <a
+            href={jobHref}
+            className="rounded-lg bg-point px-5 py-2.5 font-bold text-white hover:bg-point-deep"
+          >
+            Open the job →
+          </a>
+        ) : (
+          <span>See the calendar.</span>
+        )}
       </section>
     );
   }

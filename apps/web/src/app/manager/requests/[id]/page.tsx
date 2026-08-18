@@ -161,6 +161,9 @@ export default async function RequestDetailPage({
       <AssignPanel
         requestId={id}
         requestStatus={request.status}
+        jobHref={
+          detail.relatedAppointmentId ? `/manager/jobs/${detail.relatedAppointmentId}` : null
+        }
         recommendations={recs?.recommendations ?? []}
         durationMinutes={recs?.serviceDuration ?? 90}
         technicians={team

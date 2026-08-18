@@ -73,6 +73,11 @@ test("owner assigns a request from an explainable recommendation", async ({ page
   await expect(page.getByText("This request has been scheduled")).toBeVisible({
     timeout: 15_000,
   });
+  // Converted requests link straight to the scheduled job.
+  await expect(page.getByRole("link", { name: "Open the job →" })).toHaveAttribute(
+    "href",
+    /\/manager\/jobs\//,
+  );
 
   // The appointment appears on the calendar day view.
   await page.goto("/manager/calendar");
