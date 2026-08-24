@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
+import { ymdInTimeZone, zonedTimeToUtc } from "@exactpoint/scheduling";
 
 /**
  * Technician PWA field flow (spec §39/§77): Today list → job → En Route →
@@ -18,8 +19,9 @@ function pool() {
 // eslint-disable-next-line no-empty-pattern -- Playwright's beforeAll signature
 test.beforeAll(async ({}, testInfo) => {
   // Per-project identity and time slot so desktop/iphone runs never collide
-  // on the technician's reservation exclusion.
-  const offsetHours = testInfo.project.name === "iphone" ? 4 : 1;
+  // on the technician's reservation exclusion. Slots sit AFTER shift close
+  // (7 PM Chicago) so the booking E2E's engine-made reservations can never
+  // overlap them either.
   fixtureEmail = `field-flow-${testInfo.project.name}@example.com`;
   const db = pool();
   // Remove any prior fixture run (reservations would otherwise collide).
@@ -64,7 +66,13 @@ test.beforeAll(async ({}, testInfo) => {
   );
   workOrderId = wo.rows[0].id;
   // A window later today (project-offset), so it lands on the Tech list.
-  const start = new Date(Date.now() + offsetHours * 60 * 60 * 1000);
+  // Today at 20:00 (desktop) / 22:00 (iphone) America/Chicago — after close.
+  const chicagoYmd = ymdInTimeZone(new Date(), "America/Chicago");
+  const start = zonedTimeToUtc(
+    chicagoYmd,
+    testInfo.project.name === "iphone" ? "22:00" : "20:00",
+    "America/Chicago",
+  );
   const end = new Date(start.getTime() + 75 * 60 * 1000);
   const appt = await db.query(
     `INSERT INTO appointments (work_order_id, window_start, window_end, duration_minutes, status)

@@ -163,21 +163,60 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
   );
   expect(queued.rowCount).toBe(1);
   expect(JSON.stringify(queued.rows[0].payload)).toContain("Drain pump replacement");
+
+  // Capture the invoice number for search assertions.
+  const invoiceNumber = (await page.locator("text=/INV-\\d+/").first().textContent())?.trim();
+  expect(invoiceNumber).toMatch(/^INV-\d+$/);
+
+  // Customer page recalls the job and the invoice (Shams's "recall later" fix).
+  await page.goto(`/manager/customers/${customer.rows[0].id}`);
+  await expect(page.getByRole("link", { name: new RegExp(invoiceNumber!) })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Open job ·/ })).toBeVisible();
+
+  // Global search: by customer name and by invoice number.
+  await page.goto("/manager/search?q=Billing");
+  await expect(
+    page.getByRole("link", { name: /Billing Fixture/ }).first(),
+  ).toBeVisible();
+  await page.goto(`/manager/search?q=${invoiceNumber}`);
+  await expect(page.getByRole("link", { name: new RegExp(invoiceNumber!) })).toBeVisible();
+
+  // Edit customer details and verify persistence.
+  await page.goto(`/manager/customers/${customer.rows[0].id}`);
+  await page.getByRole("button", { name: "Edit details" }).click();
+  await page.getByLabel("Last name").fill("Fixture-Edited");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText("Saved.")).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: /Billing Fixture-Edited/ }),
+  ).toBeVisible();
+  // Restore for cleanup-by-email consistency (email unchanged; name irrelevant).
+
   await pool.end();
 });
 
 test("blocked time renders on the calendar", async ({ page }, testInfo) => {
+  // Remove any prior E2E blocks so the deterministic day is always free.
+  const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  await pool.query(
+    `WITH b AS (SELECT id FROM schedule_blocks WHERE reason = 'E2E block test'),
+     d AS (DELETE FROM schedule_reservations WHERE block_id IN (SELECT id FROM b))
+     DELETE FROM schedule_blocks WHERE id IN (SELECT id FROM b)`,
+  );
+  await pool.end();
+
   await login(page, "info@exactpointrepairs.com", process.env.SEED_OWNER_PASSWORD ?? "");
 
-  // Unique far-future day per run/project so repeated runs never collide.
-  const offset = 40 + ((Date.now() + (testInfo.project.name === "iphone" ? 150 : 0)) % 140);
+  // Deterministic far-future day per project; cleanup above keeps it free.
+  const offset = testInfo.project.name === "iphone" ? 46 : 45;
   const day = new Date(Date.now() + offset * 24 * 60 * 60 * 1000);
   const ymd = day.toISOString().slice(0, 10);
 
   await page.goto(`/manager/calendar?date=${ymd}`);
   await page.getByRole("button", { name: "Block time" }).click();
-  await page.getByLabel("From").fill(`${ymd}T10:00`);
-  await page.getByLabel("To").fill(`${ymd}T12:00`);
+  await page.getByLabel("From", { exact: true }).fill(`${ymd}T10:00`);
+  await page.getByLabel("To", { exact: true }).fill(`${ymd}T12:00`);
   await page.getByLabel("Reason").fill("E2E block test");
   await page.getByRole("button", { name: "Block", exact: true }).click();
   await expect(page.getByText(/Blocked\.|skipped/)).toBeVisible({ timeout: 10_000 });

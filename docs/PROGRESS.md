@@ -61,6 +61,10 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - Footer Team Sign-in link; change-password page; forgot/reset-password via the live email pipeline. Phone-intake New Booking in the Manager (find-or-create by phone, source "phone", hands off to recommendations). Calendar shows time-off/blocked segments; Block Time control (tech or company); job-page cross-day Reschedule. 26 E2E green (suite serialized — shared DB fixtures).
 
+## Manager usability round 2 (Shams's field feedback) — ✅ live 2026-08-24
+
+- Global search (customers/EP-refs/INV-numbers) with a header search box; Invoices menu with status filters + outstanding total; customer page gains Jobs & invoices section (job + invoice links — fixes "can't recall/print/email the invoice later") and an Edit details form (name/phone/email/notes, audited; addresses stay validation-only). E2E-stabilized suite: 30 tests, 3 consecutive clean runs.
+
 ## Post-launch backlog
 
 - Turnstile activation (needs token permission or dashboard-created widget keys).

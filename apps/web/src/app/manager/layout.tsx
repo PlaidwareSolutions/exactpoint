@@ -12,6 +12,7 @@ const NAV = [
   { href: "/manager/map", label: "Map" },
   { href: "/manager/area", label: "Area View" },
   { href: "/manager/customers", label: "Customers" },
+  { href: "/manager/invoices", label: "Invoices" },
   { href: "/manager/team", label: "Team" },
   { href: "/manager/settings", label: "Settings" },
   { href: "/help", label: "Help" },
@@ -40,6 +41,18 @@ export default async function ManagerLayout({ children }: { children: React.Reac
               </Link>
             ))}
           </nav>
+          <form action="/manager/search" className="hidden md:block">
+            <input
+              type="search"
+              name="q"
+              placeholder="Search…"
+              aria-label="Search customers, requests, invoices"
+              className="w-36 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-sm text-white placeholder:text-white/50 focus:border-point focus:outline-none lg:w-48"
+            />
+          </form>
+          <Link href="/manager/search" className="rounded-lg px-2 py-1.5 text-sm font-medium hover:bg-white/10 md:hidden" aria-label="Search">
+            🔍
+          </Link>
           <SignOutButton />
         </div>
       </header>
