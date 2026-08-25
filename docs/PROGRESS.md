@@ -69,6 +69,10 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - All billing labels say "Quote" (owner's vocabulary); Email-quote-to-customer button with fee-waiver wording (new quote_issued template); quote-first flow: Create quote on the customer page → /manager/quotes/[workOrderId] (bare work order, no appointment) → Open quote chip on the customer page. Handbook Ch.9 rewritten. 30 E2E green ×2.
 
+## Commercial positioning (owner request) — ✅ live 2026-08-25
+
+- "Residential & commercial" across hero, trust tile, footer, About, hub pages, meta descriptions, OG/Twitter, and JSON-LD; new /appliance-repair/commercial page (restaurants, coffee shops, small businesses — commercial kitchen/refrigeration equipment) in the services grid and sitemap for search visibility.
+
 ## Post-launch backlog
 
 - Turnstile activation (needs token permission or dashboard-created widget keys).

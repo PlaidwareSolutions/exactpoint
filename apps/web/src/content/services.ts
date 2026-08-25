@@ -149,6 +149,24 @@ export const SERVICES: ServiceContent[] = [
     category: "appliance",
   },
   {
+    slug: "commercial",
+    bookingSlug: "other",
+    name: "Commercial Appliance Service",
+    title: "Commercial Appliance & Kitchen Equipment Service in Greater Houston",
+    intro:
+      "Restaurants, coffee shops, salons, offices, and small businesses: when equipment stops, revenue stops. We service commercial kitchen and refrigeration equipment across Greater Houston with the same diagnosis-first honesty — and a quote before any work begins.",
+    symptoms: [
+      "Commercial refrigerators and freezers not holding temperature",
+      "Commercial ovens and convection ovens not heating evenly",
+      "Ranges and cooktops with ignition or burner problems",
+      "Ice machines producing slowly or not at all",
+      "Dishwashers and warewashers not cleaning or draining",
+      "Coffee and beverage equipment water-supply issues",
+      "Break-room and back-of-house appliance repairs",
+    ],
+    category: "appliance",
+  },
+  {
     slug: "ac-repair",
     bookingSlug: "ac_repair",
     name: "AC Repair",

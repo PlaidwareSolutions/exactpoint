@@ -8,12 +8,12 @@ export const metadata: Metadata = {
     default: `${BUSINESS.displayName} — Serving Greater Houston`,
     template: `%s | ${BUSINESS.shortName}`,
   },
-  description: `Appliance repair and HVAC service across Greater Houston. Same-day and emergency service may be available. Call ${BUSINESS.phone}.`,
+  description: `Residential & commercial appliance repair and HVAC service across Greater Houston. Same-day and emergency service may be available. Call ${BUSINESS.phone}.`,
   openGraph: {
     type: "website",
     siteName: BUSINESS.displayName,
     title: `${BUSINESS.displayName} — Serving Greater Houston`,
-    description: `Appliance repair and HVAC service across Greater Houston. Same-day and emergency service may be available. Call ${BUSINESS.phone}.`,
+    description: `Residential & commercial appliance repair and HVAC service across Greater Houston. Same-day and emergency service may be available. Call ${BUSINESS.phone}.`,
     url: `https://${BUSINESS.domain}`,
     images: [
       {
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: `${BUSINESS.displayName} — Serving Greater Houston`,
-    description: `Appliance repair and HVAC service across Greater Houston. Call ${BUSINESS.phone}.`,
+    description: `Residential & commercial appliance repair and HVAC service across Greater Houston. Call ${BUSINESS.phone}.`,
     images: ["/og.png"],
   },
 };

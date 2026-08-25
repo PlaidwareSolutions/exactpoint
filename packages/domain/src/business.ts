@@ -20,6 +20,8 @@ export const BUSINESS = {
   emergencyService: "subject to availability",
   /** Owner-supplied 2026-08-16: licensed, registered, and insured. */
   credentials: "Licensed, registered & insured",
+  /** Owner-supplied 2026-08-25: serves homes and businesses alike. */
+  clientele: "Residential & commercial",
   /** Owner-supplied 2026-08-16. */
   experience: "10+ years of experience",
 } as const;

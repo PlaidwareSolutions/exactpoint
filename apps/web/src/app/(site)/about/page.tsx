@@ -17,9 +17,10 @@ export default function AboutPage() {
           </h1>
           <div className="mt-6 space-y-4 text-slate">
             <p>
-              {BUSINESS.legalName} repairs household appliances and services
-              HVAC systems across Greater Houston — from Katy to Baytown,
-              Spring to League City. We&apos;re{" "}
+              {BUSINESS.legalName} repairs appliances and services HVAC
+              systems across Greater Houston — residential and commercial,
+              from family kitchens to restaurants and coffee shops, Katy to
+              Baytown, Spring to League City. We&apos;re{" "}
               <strong className="text-navy">
                 licensed, registered, and insured
               </strong>

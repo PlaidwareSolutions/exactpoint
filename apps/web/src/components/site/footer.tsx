@@ -13,8 +13,8 @@ export function SiteFooter() {
             <span className="text-base font-extrabold tracking-wide">EXACTPOINT</span>
           </div>
           <p className="mt-3 text-sm text-white/70">
-            {BUSINESS.legalName}. Appliance repair and HVAC service across{" "}
-            {BUSINESS.serviceArea}.
+            {BUSINESS.legalName}. Residential &amp; commercial appliance repair
+            and HVAC service across {BUSINESS.serviceArea}.
           </p>
           <p className="mt-2 text-sm font-semibold text-white/85">
             {BUSINESS.credentials} · {BUSINESS.experience}

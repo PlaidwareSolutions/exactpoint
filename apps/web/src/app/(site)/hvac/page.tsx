@@ -15,7 +15,8 @@ export default function HvacPage() {
         HVAC Services in Greater Houston
       </h1>
       <p className="mt-3 max-w-2xl text-slate">
-        Cooling and heating diagnostics, repair, and maintenance. {EMERGENCY_WORDING}
+        Cooling and heating diagnostics, repair, and maintenance — for homes
+        and businesses alike. {EMERGENCY_WORDING}
       </p>
       <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {HVAC_SERVICES.map((s) => (

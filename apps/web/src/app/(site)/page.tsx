@@ -16,9 +16,10 @@ export default function HomePage() {
             Appliance or HVAC problem? We can help.
           </h1>
           <p className="mt-4 max-w-xl text-lg text-white/80">
-            Diagnosis first, a clear quote second — and the $80 service-call fee
-            is waived when you approve the repair. Same-day and emergency
-            service may be available.
+            Residential and commercial — homes, restaurants, coffee shops, and
+            small businesses. Diagnosis first, a clear quote second — and the
+            $80 service-call fee is waived when you approve the repair.
+            Same-day and emergency service may be available.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -72,11 +73,11 @@ export default function HomePage() {
           </div>
           <div>
             <h2 className="text-sm font-extrabold uppercase tracking-wider text-navy">
-              All major brands
+              Homes &amp; businesses
             </h2>
             <p className="mt-1 text-sm text-slate">
-              We service all major appliance brands, gas and electric, old and
-              new.
+              Residential and commercial — all major appliance brands, gas and
+              electric, from kitchens to coffee shops.
             </p>
           </div>
         </div>
