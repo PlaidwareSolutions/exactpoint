@@ -10,6 +10,7 @@ import {
   decideEstimate,
   enqueueEmail,
   estimateItems,
+  estimates,
   getDb,
   invoices,
   recordInvoicePayment,
@@ -80,6 +81,87 @@ export async function decideEstimateAction(input: unknown): Promise<ActionResult
     return { ok: false, error: err instanceof Error ? err.message : "Could not record decision." };
   }
   revalidatePath("/manager/jobs");
+  return { ok: true };
+}
+
+/**
+ * Creates a bare work order for quote-first customers (no appointment yet)
+ * so the owner can price a job before anything is scheduled.
+ */
+export async function createQuoteDraft(
+  customerId: string,
+  addressId: string,
+): Promise<ActionResult & { workOrderId?: string }> {
+  const session = await requireOwner();
+  const ids = z.object({ c: z.uuid(), a: z.uuid() }).safeParse({ c: customerId, a: addressId });
+  if (!ids.success) return { ok: false, error: "Invalid customer or address." };
+  const db = getDb();
+  const [wo] = await db
+    .insert(workOrders)
+    .values({ customerId: ids.data.c, addressId: ids.data.a, status: "open" })
+    .returning({ id: workOrders.id });
+  await db.insert(auditLogs).values({
+    actorType: "user",
+    actorId: session.user.id,
+    action: "work_order.quote_draft_created",
+    entityType: "work_order",
+    entityId: wo!.id,
+  });
+  return { ok: true, workOrderId: wo!.id };
+}
+
+/** Emails the current quote (undecided estimate) to the customer. */
+export async function emailQuote(estimateId: string): Promise<ActionResult> {
+  const session = await requireOwner();
+  const parsed = z.uuid().safeParse(estimateId);
+  if (!parsed.success) return { ok: false, error: "Invalid quote." };
+  const db = getDb();
+
+  const [estimate] = await db
+    .select()
+    .from(estimates)
+    .where(eq(estimates.id, parsed.data));
+  if (!estimate) return { ok: false, error: "Quote not found." };
+  const [customer] = await db
+    .select({ email: customers.email, firstName: customers.firstName })
+    .from(workOrders)
+    .innerJoin(customers, eq(workOrders.customerId, customers.id))
+    .where(eq(workOrders.id, estimate.workOrderId));
+  if (!customer?.email) return { ok: false, error: "This customer has no email on file." };
+
+  const items = await db
+    .select()
+    .from(estimateItems)
+    .where(eq(estimateItems.estimateId, estimate.id))
+    .orderBy(asc(estimateItems.sortOrder));
+  if (items.length === 0) return { ok: false, error: "Add at least one line first." };
+
+  const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+  const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
+  const tax = Math.round((subtotal * estimate.taxRateBps) / 10_000);
+  await enqueueEmail(db, {
+    template: "quote_issued",
+    recipient: customer.email,
+    payload: {
+      firstName: customer.firstName,
+      linesText: items
+        .map((i) => `  ${i.description} (x${i.quantity}) — ${money(i.quantity * i.unitPriceCents)}`)
+        .join("\n"),
+      totalsText: [
+        `Subtotal: ${money(subtotal)}`,
+        `Tax: ${money(tax)}`,
+        `Quoted total: ${money(subtotal + tax)}`,
+      ].join("\n"),
+    },
+  });
+  await db.insert(auditLogs).values({
+    actorType: "user",
+    actorId: session.user.id,
+    action: "estimate.emailed",
+    entityType: "estimate",
+    entityId: estimate.id,
+    newValue: { recipient: customer.email },
+  });
   return { ok: true };
 }
 

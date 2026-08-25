@@ -142,7 +142,7 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
   // Build and save the estimate.
   await page.getByPlaceholder("Description").fill("Drain pump replacement");
   await page.getByLabel("Unit price").fill("185.00");
-  await page.getByRole("button", { name: "Save estimate" }).click();
+  await page.getByRole("button", { name: "Save quote" }).click();
   await expect(page.getByRole("button", { name: "Customer approved" })).toBeVisible();
 
   // Approve → invoice issues with the fee waived.
@@ -180,6 +180,23 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
   ).toBeVisible();
   await page.goto(`/manager/search?q=${invoiceNumber}`);
   await expect(page.getByRole("link", { name: new RegExp(invoiceNumber!) })).toBeVisible();
+
+  // Quote-first flow: create a standalone quote from the customer page,
+  // save a line, and email it (spec follow-up to Shams's field report).
+  await page.goto(`/manager/customers/${customer.rows[0].id}`);
+  await page.getByRole("button", { name: "Create quote" }).click();
+  await expect(page).toHaveURL(/\/manager\/quotes\//, { timeout: 15_000 });
+  await page.getByPlaceholder("Description").fill("Compressor replacement (quote)");
+  await page.getByLabel("Unit price").fill("650.00");
+  await page.getByRole("button", { name: "Save quote" }).click();
+  await page.getByRole("button", { name: "Email quote to customer" }).click();
+  await expect(page.getByText("Quote emailed.")).toBeVisible({ timeout: 15_000 });
+  const quotedEmail = await pool.query(
+    `SELECT payload FROM notifications WHERE recipient = $1 AND template = 'quote_issued'`,
+    [email],
+  );
+  expect(quotedEmail.rowCount).toBe(1);
+  expect(JSON.stringify(quotedEmail.rows[0].payload)).toContain("Compressor replacement");
 
   // Edit customer details and verify persistence.
   await page.goto(`/manager/customers/${customer.rows[0].id}`);

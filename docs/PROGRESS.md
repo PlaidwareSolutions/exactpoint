@@ -65,6 +65,10 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - Global search (customers/EP-refs/INV-numbers) with a header search box; Invoices menu with status filters + outstanding total; customer page gains Jobs & invoices section (job + invoice links — fixes "can't recall/print/email the invoice later") and an Edit details form (name/phone/email/notes, audited; addresses stay validation-only). E2E-stabilized suite: 30 tests, 3 consecutive clean runs.
 
+## Quotes round (Shams's field report) — ✅ live 2026-08-25
+
+- All billing labels say "Quote" (owner's vocabulary); Email-quote-to-customer button with fee-waiver wording (new quote_issued template); quote-first flow: Create quote on the customer page → /manager/quotes/[workOrderId] (bare work order, no appointment) → Open quote chip on the customer page. Handbook Ch.9 rewritten. 30 E2E green ×2.
+
 ## Post-launch backlog
 
 - Turnstile activation (needs token permission or dashboard-created widget keys).

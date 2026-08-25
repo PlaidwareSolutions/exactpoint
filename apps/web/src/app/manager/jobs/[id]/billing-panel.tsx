@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatCents, subtotalCents, taxCents } from "@exactpoint/domain";
 import {
   decideEstimateAction,
+  emailQuote,
   recordPaymentAction,
   saveEstimate,
 } from "@/lib/manager/billing-actions";
@@ -55,6 +56,7 @@ export function BillingPanel({ data }: { data: BillingData }) {
   const [taxRate, setTaxRate] = useState(((data.estimate?.taxRateBps ?? 825) / 100).toFixed(2));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [quoteSent, setQuoteSent] = useState(false);
 
   const cents = items
     .filter((i) => i.description.trim() && i.unitPrice !== "")
@@ -73,7 +75,7 @@ export function BillingPanel({ data }: { data: BillingData }) {
 
   return (
     <section className="rounded-xl border border-line bg-white p-5">
-      <h2 className="font-bold text-navy">Estimate &amp; invoice</h2>
+      <h2 className="font-bold text-navy">Quote &amp; invoice</h2>
       {message && (
         <p className="mt-2 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{message}</p>
       )}
@@ -182,8 +184,31 @@ export function BillingPanel({ data }: { data: BillingData }) {
               }
               className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white hover:bg-navy-soft disabled:opacity-50"
             >
-              {data.estimate ? "Update estimate" : "Save estimate"}
+              {data.estimate ? "Update quote" : "Save quote"}
             </button>
+            {data.estimate && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  setMessage(null);
+                  setQuoteSent(false);
+                  const result = await emailQuote(data.estimate!.id);
+                  setBusy(false);
+                  if (result.ok) setQuoteSent(true);
+                  else setMessage(result.error);
+                }}
+                className="rounded-lg border border-point px-4 py-2 text-sm font-bold text-point hover:bg-point hover:text-white disabled:opacity-50"
+              >
+                Email quote to customer
+              </button>
+            )}
+            {quoteSent && (
+              <span className="self-center text-sm font-semibold text-emerald-700">
+                Quote emailed.
+              </span>
+            )}
             {data.estimate && (
               <>
                 <button
@@ -219,7 +244,7 @@ export function BillingPanel({ data }: { data: BillingData }) {
 
       {decided && (
         <p className="mt-2 text-sm text-slate">
-          Estimate <strong className="text-navy">{data.estimate!.status}</strong> — invoice issued below.
+          Quote <strong className="text-navy">{data.estimate!.status}</strong> — invoice issued below.
         </p>
       )}
 

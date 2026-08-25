@@ -13,6 +13,7 @@ import {
   workOrders,
 } from "@exactpoint/db";
 import { BUSINESS, formatCents } from "@exactpoint/domain";
+import { CreateQuoteButton } from "./create-quote-button";
 import { EditCustomerForm } from "./edit-customer-form";
 
 export const dynamic = "force-dynamic";
@@ -83,6 +84,9 @@ export default async function CustomerDetailPage({
         <h1 className="text-2xl font-extrabold text-navy">
           {customer.firstName} {customer.lastName}
         </h1>
+        <div className="flex flex-wrap items-start gap-2">
+          <CreateQuoteButton customerId={id} addressId={addresses[0]?.id ?? null} />
+        </div>
         <EditCustomerForm
           customerId={id}
           initial={{
@@ -175,6 +179,14 @@ export default async function CustomerDetailPage({
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
+                  {orderAppts.length === 0 && (
+                    <Link
+                      href={`/manager/quotes/${order.id}`}
+                      className="rounded-lg border border-point px-3 py-1.5 text-xs font-bold text-point hover:bg-point hover:text-white"
+                    >
+                      Open quote →
+                    </Link>
+                  )}
                   {orderAppts.map((a) => (
                     <Link
                       key={a.id}

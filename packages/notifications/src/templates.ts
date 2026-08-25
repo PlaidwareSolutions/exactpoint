@@ -79,6 +79,26 @@ export function renderEmail(
           `— ${business.displayName}`,
         ].join("\n"),
       };
+    case "quote_issued":
+      return {
+        to: recipient,
+        subject: `${business.displayName} — your quote`,
+        text: [
+          `Hi ${first},`,
+          "",
+          `Here is your quote from ${business.displayName}:`,
+          "",
+          str(payload, "linesText"),
+          "",
+          str(payload, "totalsText"),
+          "",
+          "Approve the quote and the $80 diagnostic/service-call fee is waived — you pay only the quoted amount.",
+          `Ready to go ahead, or have questions? Call ${business.phone} or just reply to this email.`,
+          "",
+          "Completed repairs carry a two-month labor warranty on the specific work performed.",
+          `— ${business.displayName}`,
+        ].join("\n"),
+      };
     case "invoice_issued":
       return {
         to: recipient,
