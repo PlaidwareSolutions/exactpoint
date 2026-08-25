@@ -12,7 +12,7 @@ const structuredData = {
   "@type": "HVACBusiness",
   name: BUSINESS.legalName,
   description:
-    "Residential and commercial appliance repair and HVAC service across Greater Houston — homes, restaurants, coffee shops, and small businesses.",
+    "Residential and commercial appliance repair and HVAC services across Greater Houston.",
   url: `https://${BUSINESS.domain}`,
   telephone: BUSINESS.phone,
   email: BUSINESS.email,

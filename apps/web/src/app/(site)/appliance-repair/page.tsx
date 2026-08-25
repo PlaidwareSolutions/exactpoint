@@ -14,10 +14,9 @@ export default function ApplianceRepairPage() {
         Appliance Repair in Greater Houston
       </h1>
       <p className="mt-3 max-w-2xl text-slate">
-        Residential and commercial — we service all major appliance brands in
-        homes, restaurants, coffee shops, and small businesses. Pick your
-        appliance to see the problems we commonly fix — or book straight away
-        and describe the issue.
+        Residential and commercial appliance repair — all major brands. Pick
+        your appliance to see the problems we commonly fix, or book straight
+        away and describe the issue.
       </p>
       <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {APPLIANCE_SERVICES.map((s) => (
