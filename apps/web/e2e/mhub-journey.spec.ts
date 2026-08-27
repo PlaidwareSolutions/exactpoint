@@ -5,9 +5,16 @@ import pg from "pg";
 
 /**
  * Live MHub staging journey — deliberately opt-in (MHUB_E2E=1 plus a real
- * MHUB_EVENTS_KEY in the server env) so routine suite runs never emit:
+ * MHUB_EVENTS_KEY in the server env) so routine suite runs never emit.
+ * BETTER_AUTH_SECRET must be a REAL process env var (not just repo .env):
+ * the attribution middleware runs on the edge runtime, which cannot load
+ * dotenv — without it the cookie is silently never set. Kill any stale
+ * server on :3000 first (reuseExistingServer would keep its env).
  *
- *   MHUB_E2E=1 MHUB_EVENTS_KEY=mhk_… pnpm exec playwright test e2e/mhub-journey.spec.ts --project=desktop
+ *   lsof -ti :3000 | xargs kill; \
+ *   BETTER_AUTH_SECRET=$(grep '^BETTER_AUTH_SECRET=' ../../.env | cut -d= -f2-) \
+ *   MHUB_E2E=1 MHUB_DEBUG=1 MHUB_EVENTS_KEY=mhk_… \
+ *   pnpm exec playwright test e2e/mhub-journey.spec.ts --project=desktop
  *
  * Journey A: UTM-attributed web booking → owner confirms → quote → approval
  * (invoice) → completion → payment. Journey B: booking → cancellation.
@@ -46,6 +53,10 @@ async function ownerLogin(page: Page) {
 
 async function bookJourney(page: Page, service: string, problem: string): Promise<string> {
   await page.goto("/book?utm_source=google&utm_medium=cpc&utm_campaign=mhub-e2e-journey");
+  // The middleware must have set the first-touch cookie — fail fast here
+  // rather than emitting an unattributed lead to the shared staging tenant.
+  const attrCookie = (await page.context().cookies()).find((c) => c.name === "mhub_attr");
+  expect(attrCookie, "mhub_attr cookie missing — is BETTER_AUTH_SECRET in the server env?").toBeTruthy();
   await page.getByRole("button", { name: service, exact: true }).click();
   await page.getByLabel(/Describe what/).fill(problem);
   await page.getByRole("button", { name: "Continue" }).click();

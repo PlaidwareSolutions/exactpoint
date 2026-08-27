@@ -45,7 +45,16 @@ function emit(
   attrs?: Record<string, unknown>,
 ): void {
   try {
-    getMhub()?.emit(stage, { externalLeadId, idempotencyKey, attrs });
+    const client = getMhub();
+    if (!client) return;
+    // MHUB_DEBUG=1 logs the exact attrs (contains contact transients — keep
+    // off in production); the bare line is always-on emit observability.
+    if (process.env.MHUB_DEBUG === "1") {
+      console.log("[mhub] emit", stage, externalLeadId, JSON.stringify(attrs ?? {}));
+    } else {
+      console.log("[mhub] emit", stage, externalLeadId);
+    }
+    client.emit(stage, { externalLeadId, idempotencyKey, attrs });
   } catch (err) {
     console.warn("[mhub] emit failed", err);
   }
