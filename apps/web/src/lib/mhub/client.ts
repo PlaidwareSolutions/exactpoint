@@ -22,8 +22,10 @@ export function getMhub(): MhubClient | null {
     baseUrl: env.MHUB_BASE_URL ?? "https://mhub-web-staging.up.railway.app/api/v1",
     persistPath: path.join(process.cwd(), ".mhub-queue.json"),
     // contact_email / contact_phone are MHub-transient (call matching and
-    // review requests; never stored server-side) but match the SDK's baseline
-    // PII token, so they must be allowlisted or they never leave this app.
+    // review requests; never stored server-side) but our vendored SDK's
+    // baseline PII filter strips them. Fixed upstream (the pre-filter now
+    // hard-passes all three transients) — on the next re-vendor these two
+    // entries become redundant and should be dropped.
     piiAllowlist: ["technician", "contact_email", "contact_phone"],
     onWarning: (message, detail) =>
       detail === undefined ? console.warn("[mhub]", message) : console.warn("[mhub]", message, detail),

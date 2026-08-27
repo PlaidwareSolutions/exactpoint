@@ -200,7 +200,6 @@ export async function setAppointmentStatus(input: unknown): Promise<ActionResult
     if (journey) {
       if (to === "completed") {
         emitJobCompleted(journey.leadId, {
-          revenueCents: journey.latestInvoiceTotalCents,
           technicianFirstName: journey.technicianFirstName,
           email: journey.customerEmail,
           phone: journey.customerPhone,

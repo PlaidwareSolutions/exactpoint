@@ -115,7 +115,6 @@ export async function techComplete(input: unknown): Promise<TechActionResult> {
   const journey = await journeyForAppointment(parsed.data.appointmentId);
   if (journey) {
     emitJobCompleted(journey.leadId, {
-      revenueCents: journey.latestInvoiceTotalCents,
       technicianFirstName: journey.technicianFirstName,
       email: journey.customerEmail,
       phone: journey.customerPhone,

@@ -3,22 +3,27 @@ import { filterAttrs, signAttribution, verifyAttribution } from "@exactpoint/mhu
 import { deriveAttributionFromParams, hasValidAttributionCookie, signAttributionEdge } from "./attribution-edge";
 import { toE164, toPackServiceType, toPackZone } from "./mapping";
 
-describe("pack-key mapping", () => {
-  it("maps appliance slugs to <type>_repair", () => {
+describe("pack-key mapping (confirmed key list, 2026-08-27)", () => {
+  it("maps appliance slugs to the pack's exact keys", () => {
     expect(toPackServiceType("refrigerator")).toBe("refrigerator_repair");
-    expect(toPackServiceType("stove_range")).toBe("range_repair");
+    expect(toPackServiceType("oven")).toBe("oven_range_repair");
+    expect(toPackServiceType("stove_range")).toBe("oven_range_repair");
     expect(toPackServiceType("ice_maker")).toBe("ice_maker_repair");
   });
-  it("keeps hvac slugs as-is", () => {
+  it("maps hvac slugs including the corrected keys", () => {
     expect(toPackServiceType("ac_repair")).toBe("ac_repair");
     expect(toPackServiceType("hvac_maintenance")).toBe("hvac_maintenance");
+    expect(toPackServiceType("hvac_diagnostic")).toBe("hvac_diagnostics");
+    expect(toPackServiceType("thermostat")).toBe("thermostat_repair");
   });
-  it("falls back to other", () => {
-    expect(toPackServiceType("garage-door")).toBe("other");
-    expect(toPackServiceType(null)).toBe("other");
+  it("omits (undefined) rather than inventing keys", () => {
+    expect(toPackServiceType("garage-door")).toBeUndefined();
+    expect(toPackServiceType(null)).toBeUndefined();
+    expect(toPackZone("brand-new-zone")).toBeUndefined();
   });
-  it("prefixes zones", () => {
+  it("maps zones, folding east into zone_southeast (no zone_east in the pack)", () => {
     expect(toPackZone("west")).toBe("zone_west");
+    expect(toPackZone("east")).toBe("zone_southeast");
     expect(toPackZone(null)).toBeUndefined();
   });
 });

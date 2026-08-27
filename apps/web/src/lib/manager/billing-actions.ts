@@ -20,7 +20,7 @@ import {
 import { LINE_ITEM_KINDS, PAYMENT_METHODS } from "@exactpoint/domain";
 import { requireOwner } from "@/lib/session";
 import {
-  emitJobCompleted,
+  emitJobRevenue,
   emitLead,
   emitQualified,
   emitRepairDeclined,
@@ -298,11 +298,12 @@ export async function recordPaymentAction(input: unknown): Promise<ActionResult>
         },
       });
     }
-    // Close the marketing loop with final revenue — dedupes against the
-    // completion-time emit when the invoice already existed then.
+    // Revenue increment for this paid invoice (MHub sums across events;
+    // the invoice id in the idempotency key makes re-recording safe).
     const journey = await journeyForWorkOrder(invoice.workOrderId);
     if (journey) {
-      emitJobCompleted(journey.leadId, {
+      emitJobRevenue(journey.leadId, {
+        invoiceId: parsed.data.invoiceId,
         revenueCents: invoice.totalCents,
         technicianFirstName: journey.technicianFirstName,
         email: journey.customerEmail,

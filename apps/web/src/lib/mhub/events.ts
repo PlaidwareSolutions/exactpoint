@@ -6,7 +6,6 @@ import {
   customers,
   estimates,
   getDb,
-  invoices,
   serviceRequests,
   serviceZones,
   technicianProfiles,
@@ -94,19 +93,45 @@ export function emitRepairDeclined(leadId: string, estimateId: string): void {
   emit("repair_declined", leadId, `${leadId}:repair_declined:${estimateId}`);
 }
 
+/**
+ * Completion marker — deliberately carries NO revenue. MHub sums
+ * revenue_cents additively across a lead's events, so revenue rides only on
+ * the per-payment emits (emitJobRevenue); this one contributes the
+ * completion timestamp, technician, and review-request contacts. Technician
+ * and owner completing the same job dedupe on the shared key.
+ */
 export function emitJobCompleted(
   leadId: string,
   input: {
-    revenueCents: number | null;
     technicianFirstName?: string | null;
     email?: string | null;
     phone?: string | null;
   },
 ): void {
-  // Revenue lands in the key: completing before the invoice exists and
-  // re-emitting once it is issued/paid must not be deduped away.
-  emit("job_completed", leadId, `${leadId}:job_completed:${input.revenueCents ?? "pending"}`, {
-    revenue_cents: input.revenueCents ?? undefined,
+  emit("job_completed", leadId, `${leadId}:job_completed`, {
+    technician: input.technicianFirstName ?? undefined,
+    contact_email: input.email || undefined,
+    contact_phone: toE164(input.phone),
+  });
+}
+
+/**
+ * One revenue increment per paid invoice — the invoice id in the key means a
+ * re-recorded payment dedupes while a second invoice on the same job adds.
+ * Never send a running total: MHub sums across events.
+ */
+export function emitJobRevenue(
+  leadId: string,
+  input: {
+    invoiceId: string;
+    revenueCents: number;
+    technicianFirstName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  },
+): void {
+  emit("job_completed", leadId, `${leadId}:job_completed:rev:${input.invoiceId}`, {
+    revenue_cents: input.revenueCents,
     technician: input.technicianFirstName ?? undefined,
     contact_email: input.email || undefined,
     contact_phone: toE164(input.phone),
@@ -159,7 +184,6 @@ export interface AppointmentJourney {
   customerEmail: string | null;
   customerPhone: string | null;
   technicianFirstName: string | null;
-  latestInvoiceTotalCents: number | null;
 }
 
 export async function journeyForAppointment(
@@ -189,19 +213,12 @@ export async function journeyForAppointment(
       )
       .where(eq(appointmentTechnicians.appointmentId, appointmentId))
       .limit(1);
-    const [invoice] = await db
-      .select({ totalCents: invoices.totalCents })
-      .from(invoices)
-      .where(eq(invoices.workOrderId, row.workOrderId))
-      .orderBy(desc(invoices.createdAt))
-      .limit(1);
     return {
       leadId: row.requestRef ?? `WO-${row.workOrderId}`,
       workOrderId: row.workOrderId,
       customerEmail: row.customerEmail,
       customerPhone: row.customerPhone,
       technicianFirstName: tech?.firstName ?? null,
-      latestInvoiceTotalCents: invoice?.totalCents ?? null,
     };
   } catch {
     return null;
@@ -232,19 +249,12 @@ export async function journeyForWorkOrder(
       .leftJoin(serviceRequests, eq(workOrders.serviceRequestId, serviceRequests.id))
       .where(eq(workOrders.id, workOrderId));
     if (!row) return null;
-    const [invoice] = await getDb()
-      .select({ totalCents: invoices.totalCents })
-      .from(invoices)
-      .where(eq(invoices.workOrderId, workOrderId))
-      .orderBy(desc(invoices.createdAt))
-      .limit(1);
     return {
       leadId: row.requestRef ?? `WO-${workOrderId}`,
       workOrderId,
       customerEmail: row.customerEmail,
       customerPhone: row.customerPhone,
       technicianFirstName: null,
-      latestInvoiceTotalCents: invoice?.totalCents ?? null,
     };
   } catch {
     return null;
