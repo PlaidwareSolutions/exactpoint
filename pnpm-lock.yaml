@@ -38,6 +38,9 @@ importers:
       '@exactpoint/maps':
         specifier: workspace:*
         version: link:../../packages/maps
+      '@exactpoint/mhub':
+        specifier: workspace:*
+        version: link:../../packages/mhub
       '@exactpoint/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
@@ -207,6 +210,15 @@ importers:
       vitest:
         specifier: ^3.0.9
         version: 3.2.7(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.12)
+
+  packages/mhub:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.13.10
+        version: 22.20.1
+      typescript:
+        specifier: ^5.8.2
+        version: 5.9.3
 
   packages/notifications:
     devDependencies:

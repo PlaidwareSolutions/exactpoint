@@ -23,3 +23,4 @@ test-results/
 
 # Raw owner-supplied photos (originals stay local)
 photos-inbox/
+.mhub-queue.json

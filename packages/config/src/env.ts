@@ -10,6 +10,8 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
   BETTER_AUTH_URL: z.url().optional(),
   SEED_OWNER_PASSWORD: z.string().optional(),
+  MHUB_BASE_URL: z.url().optional(),
+  MHUB_EVENTS_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

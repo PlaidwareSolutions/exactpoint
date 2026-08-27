@@ -73,6 +73,10 @@ Pacing: milestone checkpoints (owner-approved 2026-08-15) — pause for review a
 
 - "Residential & commercial" across hero, trust tile, footer, About, hub pages, meta descriptions, OG/Twitter, and JSON-LD; new /appliance-repair/commercial page (restaurants, coffee shops, small businesses — commercial kitchen/refrigeration equipment) in the services grid and sitemap for search visibility.
 
+## MHub integration (Plaidware Marketing Ops Hub) — wired 2026-08-27
+
+- Vendored @plaidware/mhub-sdk into packages/mhub (Railway can't see file: deps; only change: extensionless relative imports for Turbopack). Env-gated singleton (no-op without MHUB_EVENTS_KEY, staging base URL default), persistent queue (.mhub-queue.json), piiAllowlist [technician, contact_email, contact_phone]. First-touch attribution: edge-safe Web Crypto port of the SDK cookie (same v1.payload.hmac format — unit-tested round-trip against the SDK verifier) set by new src/middleware.ts on public pages only; read in submitBooking. Stage emissions with deterministic idempotency keys at: submitBooking + createPhoneBooking + createQuoteDraft (lead), estimate saved / request reviewed / auto-or-manual scheduling (qualified), scheduleAppointment successes (appointment_booked), cancelled/no_show/customer_declined (appointment_cancelled), estimate declined (repair_declined), tech completion + owner completion + payment recorded (job_completed with revenue_cents, technician first name). Awaiting MHUB_EVENTS_KEY to activate + run the live staging journey.
+
 ## Post-launch backlog
 
 - Turnstile activation (needs token permission or dashboard-created widget keys).

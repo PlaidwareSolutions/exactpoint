@@ -23,6 +23,13 @@ import {
   requiredSkillForServiceType,
   travelFnForLocation,
 } from "@/lib/scheduling-server";
+import {
+  emitAppointmentBooked,
+  emitAppointmentCancelled,
+  emitJobCompleted,
+  emitQualified,
+  journeyForAppointment,
+} from "@/lib/mhub/events";
 import { serviceRequestDetail } from "./queries";
 
 export type ActionResult =
@@ -83,8 +90,9 @@ export async function assignRequest(input: unknown): Promise<ActionResult> {
   );
   if (!check.ok) return { ok: false, error: check.blockers.join(" · ") };
 
+  let createdAppointmentId: string | null = null;
   try {
-    await scheduleAppointment(getDb(), {
+    const created = await scheduleAppointment(getDb(), {
       serviceRequestId: requestId,
       customerId: detail.request.customerId,
       addressId: detail.address.id,
@@ -100,11 +108,17 @@ export async function assignRequest(input: unknown): Promise<ActionResult> {
       actorId: session.user.id,
       decisionNote: override ? `manual override: ${note ?? "no note"}` : note ?? null,
     });
+    createdAppointmentId = created.appointmentId;
   } catch (err) {
     if (err instanceof ScheduleConflictError) {
       return { ok: false, error: "That technician was just booked for this time." };
     }
     throw err;
+  }
+
+  emitQualified(detail.request.reference);
+  if (createdAppointmentId) {
+    emitAppointmentBooked(detail.request.reference, createdAppointmentId);
   }
 
   if (detail.customer?.email) {
@@ -180,6 +194,22 @@ export async function setAppointmentStatus(input: unknown): Promise<ActionResult
     actorId: session.user.id,
     note: parsed.data.note,
   });
+  const to = parsed.data.to;
+  if (to === "cancelled" || to === "customer_declined" || to === "no_show" || to === "completed") {
+    const journey = await journeyForAppointment(parsed.data.appointmentId);
+    if (journey) {
+      if (to === "completed") {
+        emitJobCompleted(journey.leadId, {
+          revenueCents: journey.latestInvoiceTotalCents,
+          technicianFirstName: journey.technicianFirstName,
+          email: journey.customerEmail,
+          phone: journey.customerPhone,
+        });
+      } else {
+        emitAppointmentCancelled(journey.leadId, parsed.data.appointmentId, to);
+      }
+    }
+  }
   revalidatePath("/manager");
   return { ok: true };
 }
@@ -228,10 +258,12 @@ export async function setRequestStatus(input: unknown): Promise<ActionResult> {
   const parsed = requestStatusSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Invalid request status." };
   const db = getDb();
-  await db
+  const [updated] = await db
     .update(serviceRequests)
     .set({ status: parsed.data.to })
-    .where(eq(serviceRequests.id, parsed.data.requestId));
+    .where(eq(serviceRequests.id, parsed.data.requestId))
+    .returning({ reference: serviceRequests.reference });
+  if (parsed.data.to === "reviewed" && updated) emitQualified(updated.reference);
   await db.insert(auditLogs).values({
     actorType: "user",
     actorId: session.user.id,

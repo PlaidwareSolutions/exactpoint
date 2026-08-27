@@ -17,6 +17,7 @@
     "@exactpoint/db": "workspace:*",
     "@exactpoint/domain": "workspace:*",
     "@exactpoint/maps": "workspace:*",
+    "@exactpoint/mhub": "workspace:*",
     "@exactpoint/notifications": "workspace:*",
     "@exactpoint/scheduling": "workspace:*",
     "@exactpoint/ui": "workspace:*",

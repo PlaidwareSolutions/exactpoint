@@ -14,6 +14,7 @@ import {
 import { requireOwner } from "@/lib/session";
 import { checkAddress, type AddressCheck } from "@/lib/address-check";
 import { addressInputSchema } from "@/lib/booking/schema";
+import { emitLead, zoneSlugForAddress } from "@/lib/mhub/events";
 
 function normalizePhone(phone: string): string {
   return phone.replace(/[^\d+]/g, "");
@@ -180,9 +181,17 @@ export async function createPhoneBooking(input: unknown): Promise<IntakeResult> 
         newValue: { reference: request!.reference, urgency: data.urgency },
       });
 
-      return { requestId: request!.id, reference: request!.reference };
+      return { requestId: request!.id, reference: request!.reference, addressId };
     });
-    return { ok: true, ...result };
+    emitLead({
+      leadId: result.reference,
+      serviceTypeSlug: data.serviceTypeSlug,
+      zoneSlug: result.addressId ? await zoneSlugForAddress(result.addressId) : null,
+      phone: data.phone,
+      email: data.email || null,
+      source: "phone",
+    });
+    return { ok: true, requestId: result.requestId, reference: result.reference };
   } catch (err) {
     console.error("[intake] create failed", err);
     return { ok: false, error: "Could not save the booking — try again." };

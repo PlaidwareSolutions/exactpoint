@@ -20,6 +20,7 @@ const nextConfig: NextConfig = {
     "@exactpoint/db",
     "@exactpoint/domain",
     "@exactpoint/maps",
+    "@exactpoint/mhub",
     "@exactpoint/notifications",
     "@exactpoint/scheduling",
     "@exactpoint/ui",

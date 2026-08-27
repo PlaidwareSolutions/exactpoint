@@ -14,11 +14,14 @@ import {
   scheduleAppointment,
   serviceRequests,
   serviceTypes,
+  serviceZones,
   serviceZoneZips,
   toEwktPoint,
 } from "@exactpoint/db";
 import { BUSINESS } from "@exactpoint/domain";
 import { addressProvider } from "@/lib/geo";
+import { readBookingAttribution } from "@/lib/mhub/attribution";
+import { emitAppointmentBooked, emitLead, emitQualified } from "@/lib/mhub/events";
 import { checkAddress, type AddressCheck } from "@/lib/address-check";
 import { zonedTimeToUtc } from "@exactpoint/scheduling";
 import { loadSchedulingConfig, requiredSkillForServiceType } from "@/lib/scheduling-server";
@@ -127,8 +130,9 @@ export async function submitBooking(input: unknown): Promise<SubmitResult> {
 
       const std = validated.standardized;
       const [zoneRow] = await tx
-        .select({ id: serviceZoneZips.zoneId })
+        .select({ id: serviceZoneZips.zoneId, slug: serviceZones.slug })
         .from(serviceZoneZips)
+        .innerJoin(serviceZones, eq(serviceZoneZips.zoneId, serviceZones.id))
         .where(eq(serviceZoneZips.zip, std.zip));
 
       // Reuse a customer only on an exact phone+email match; likely duplicates
@@ -223,6 +227,7 @@ export async function submitBooking(input: unknown): Promise<SubmitResult> {
         customerId,
         addressId: address!.id,
         serviceTypeId: serviceType?.id ?? null,
+        zoneSlug: zoneRow?.slug ?? null,
       };
     });
 
@@ -230,6 +235,7 @@ export async function submitBooking(input: unknown): Promise<SubmitResult> {
     // request survives regardless — a lost race degrades to the unassigned
     // queue instead of losing the customer.
     let scheduled = false;
+    let scheduledAppointmentId: string | null = null;
     const claim = data.slotToken ? verifySlotToken(data.slotToken) : null;
     if (claim) {
       try {
@@ -241,7 +247,7 @@ export async function submitBooking(input: unknown): Promise<SubmitResult> {
         const windowEnd = picked
           ? zonedTimeToUtc(picked.date, picked.end, BUSINESS.timezone)
           : new Date(claim.end);
-        await scheduleAppointment(db, {
+        const created = await scheduleAppointment(db, {
           serviceRequestId: result.requestId,
           customerId: result.customerId,
           addressId: result.addressId,
@@ -257,11 +263,26 @@ export async function submitBooking(input: unknown): Promise<SubmitResult> {
           actorType: "customer",
         });
         scheduled = true;
+        scheduledAppointmentId = created.appointmentId;
       } catch (err) {
         if (!(err instanceof ScheduleConflictError)) {
           console.error("[booking] scheduling after submit failed", err);
         }
       }
+    }
+
+    emitLead({
+      leadId: result.reference,
+      serviceTypeSlug: data.serviceTypeSlug,
+      zoneSlug: result.zoneSlug,
+      phone: data.phone,
+      email: data.email,
+      attribution: await readBookingAttribution(),
+      source: "web",
+    });
+    if (scheduledAppointmentId) {
+      emitQualified(result.reference);
+      emitAppointmentBooked(result.reference, scheduledAppointmentId);
     }
 
     return { ok: true, reference: result.reference, scheduled };

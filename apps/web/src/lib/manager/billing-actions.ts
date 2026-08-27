@@ -19,6 +19,15 @@ import {
 } from "@exactpoint/db";
 import { LINE_ITEM_KINDS, PAYMENT_METHODS } from "@exactpoint/domain";
 import { requireOwner } from "@/lib/session";
+import {
+  emitJobCompleted,
+  emitLead,
+  emitQualified,
+  emitRepairDeclined,
+  journeyForWorkOrder,
+  leadIdForEstimate,
+  leadIdForWorkOrder,
+} from "@/lib/mhub/events";
 import type { ActionResult } from "./schedule-actions";
 
 const itemSchema = z.object({
@@ -58,6 +67,7 @@ export async function saveEstimate(input: unknown): Promise<ActionResult> {
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Could not save estimate." };
   }
+  emitQualified(await leadIdForWorkOrder(parsed.data.workOrderId));
   revalidatePath("/manager/jobs");
   return { ok: true };
 }
@@ -79,6 +89,10 @@ export async function decideEstimateAction(input: unknown): Promise<ActionResult
     });
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Could not record decision." };
+  }
+  if (parsed.data.decision === "declined") {
+    const leadId = await leadIdForEstimate(parsed.data.estimateId);
+    if (leadId) emitRepairDeclined(leadId, parsed.data.estimateId);
   }
   revalidatePath("/manager/jobs");
   return { ok: true };
@@ -106,6 +120,16 @@ export async function createQuoteDraft(
     action: "work_order.quote_draft_created",
     entityType: "work_order",
     entityId: wo!.id,
+  });
+  const [contact] = await db
+    .select({ phone: customers.phone, email: customers.email })
+    .from(customers)
+    .where(eq(customers.id, ids.data.c));
+  emitLead({
+    leadId: `WO-${wo!.id}`,
+    phone: contact?.phone,
+    email: contact?.email,
+    source: "phone",
   });
   return { ok: true, workOrderId: wo!.id };
 }
@@ -272,6 +296,17 @@ export async function recordPaymentAction(input: unknown): Promise<ActionResult>
           reference: invoice.number,
           totalLabel: `$${(invoice.totalCents / 100).toFixed(2)}`,
         },
+      });
+    }
+    // Close the marketing loop with final revenue — dedupes against the
+    // completion-time emit when the invoice already existed then.
+    const journey = await journeyForWorkOrder(invoice.workOrderId);
+    if (journey) {
+      emitJobCompleted(journey.leadId, {
+        revenueCents: invoice.totalCents,
+        technicianFirstName: journey.technicianFirstName,
+        email: journey.customerEmail,
+        phone: journey.customerPhone,
       });
     }
   }

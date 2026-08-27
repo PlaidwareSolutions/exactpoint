@@ -17,6 +17,7 @@ import {
   updateAppointmentStatus,
 } from "@exactpoint/db";
 import { canAccessManagerArea } from "@/lib/authz";
+import { emitJobCompleted, journeyForAppointment } from "@/lib/mhub/events";
 import { requireTechnician } from "@/lib/session";
 
 /**
@@ -110,6 +111,15 @@ export async function techComplete(input: unknown): Promise<TechActionResult> {
         payload: { firstName: customer.firstName },
       });
     }
+  }
+  const journey = await journeyForAppointment(parsed.data.appointmentId);
+  if (journey) {
+    emitJobCompleted(journey.leadId, {
+      revenueCents: journey.latestInvoiceTotalCents,
+      technicianFirstName: journey.technicianFirstName,
+      email: journey.customerEmail,
+      phone: journey.customerPhone,
+    });
   }
   revalidatePath("/tech");
   revalidatePath("/manager");
