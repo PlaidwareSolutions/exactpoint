@@ -234,7 +234,9 @@ Standard labor warranty: **2 months**, applying to the specific service/repair a
 
 ## 42. Payment
 
-Phase 1: Zelle, Cash, Check. Store payment method/status when appropriate. No credit-card processing in initial release; architect so card payments can be added later.
+Phase 1: Zelle, Cash, Check. No credit-card processing in initial release; architect so card payments can be added later.
+
+**Payments ledger (implemented 2026-10-30).** Every payment is an append-only ledger row against an invoice: amount, method, optional reference (check number / Zelle confirmation), date received, note, who recorded it, and a receipt number (`RCT-####`). Invoices accept **partial payments** (deposits, instalments); status is derived from the ledger — `unpaid` → `partially_paid` → `paid` — never set by hand, and paid-to-date / balance are computed, not stored. A payment above the balance, or on a void invoice, is refused; concurrent recordings are serialised on the invoice row so overpayment is impossible. **Refunds** are ledger rows of kind `refund` (never above what was received) and reopen the balance. Rows are never edited or deleted. **Receipts:** one per ledger row — printable page and `payment_receipt` email showing amount, method, invoice total, paid to date and balance remaining (or "paid in full"), reading as issued. Receipt emails are idempotent (no duplicate within a minute). Revenue reporting (MHub) emits one increment per ledger row, negative for refunds.
 
 ## 43. Public Website Pages
 
@@ -426,7 +428,7 @@ Wrap maps, email, SMS, storage behind interfaces (AddressProvider, RouteProvider
 
 ## 85–88. Future Phases
 
-**Estimates** (diagnostic, parts, labor, tax, approval, signature; declined → $80 due; accepted → waived). **Invoices** (number, work order, items, payment status/type, receipt). **Online payments** (cards, Apple/Google Pay — not at launch). **Advanced dispatch** (live location if explicitly enabled, reoptimization, skill levels, territories, vehicles, parts inventory, dispatch board, memberships, recurring HVAC maintenance, revenue/performance/profitability reporting). Phase-1 architecture must allow these without a rewrite.
+**Estimates** (diagnostic, parts, labor, tax, approval, signature; declined → $80 due; accepted → waived). *Revisions (implemented 2026-10-30):* every save of a quote is a new numbered revision; the one the customer is looking at is `presented`, earlier ones become `superseded` and stay readable; a decision attaches to a specific revision and locks it. *Change orders:* after approval, a further save is a `change_order` revision that is emailed and approved/declined on its own — approved → the invoice totals are rebuilt from it (refused if the new total is below what has been paid; record a refund first), declined → the approved revision and invoice stand. No change orders once the invoice is paid in full and the job is completed; a declined quote is terminal (new work = new job). **Invoices** (number, work order, items, derived payment status, payments ledger, per-payment receipts — see §42). **Online payments** (cards, Apple/Google Pay — not at launch). **Advanced dispatch** (live location if explicitly enabled, reoptimization, skill levels, territories, vehicles, parts inventory, dispatch board, memberships, recurring HVAC maintenance, revenue/performance/profitability reporting). Phase-1 architecture must allow these without a rewrite.
 
 ## 89. Required Inputs Before Final Production UI
 

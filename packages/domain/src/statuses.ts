@@ -123,8 +123,25 @@ export type EstimateStatus = (typeof ESTIMATE_STATUSES)[number];
 export const LINE_ITEM_KINDS = ["part", "labor", "other"] as const;
 export type LineItemKind = (typeof LINE_ITEM_KINDS)[number];
 
-export const INVOICE_STATUSES = ["unpaid", "paid", "void"] as const;
+/**
+ * Every save of a quote is a new revision. "presented" is the one the
+ * customer is looking at; a later save marks it "superseded". A decision
+ * (approved/declined) locks the revision for good.
+ */
+export const ESTIMATE_REVISION_STATUSES = ["presented", "superseded", "approved", "declined"] as const;
+export type EstimateRevisionStatus = (typeof ESTIMATE_REVISION_STATUSES)[number];
+
+/** "quote" before the first decision; "change_order" after approval. */
+export const ESTIMATE_REVISION_KINDS = ["quote", "change_order"] as const;
+export type EstimateRevisionKind = (typeof ESTIMATE_REVISION_KINDS)[number];
+
+/** Derived from the payments ledger — never set by hand (spec §42, §86). */
+export const INVOICE_STATUSES = ["unpaid", "partially_paid", "paid", "void"] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
 
 export const PAYMENT_METHODS = ["zelle", "cash", "check"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/** Ledger rows are append-only; a mistake is corrected with a refund row, never an edit. */
+export const PAYMENT_KINDS = ["payment", "refund"] as const;
+export type PaymentKind = (typeof PAYMENT_KINDS)[number];

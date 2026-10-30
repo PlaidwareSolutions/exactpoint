@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { invoiceAmountsForDecision, subtotalCents, taxCents } from "./money";
+import {
+  balanceCents,
+  invoiceAmountsForDecision,
+  invoiceStatusFor,
+  paidCents,
+  subtotalCents,
+  taxCents,
+} from "./money";
 
 const items = [
   { quantity: 1, unitPriceCents: 18500 }, // part
@@ -27,5 +34,27 @@ describe("estimate math (spec §85)", () => {
       taxCents: 0,
       totalCents: 8000,
     });
+  });
+});
+
+describe("payments ledger math (spec §42)", () => {
+  it("nets refunds against payments", () => {
+    expect(paidCents([])).toBe(0);
+    expect(
+      paidCents([
+        { kind: "payment", amountCents: 20000 },
+        { kind: "payment", amountCents: 5000 },
+        { kind: "refund", amountCents: 3000 },
+      ]),
+    ).toBe(22000);
+  });
+
+  it("derives the invoice status from total vs. net paid", () => {
+    expect(invoiceStatusFor(40594, 0)).toBe("unpaid");
+    expect(invoiceStatusFor(40594, 20000)).toBe("partially_paid");
+    expect(invoiceStatusFor(40594, 40594)).toBe("paid");
+    // A refund that takes net paid back to zero reopens the invoice.
+    expect(invoiceStatusFor(40594, 0)).toBe("unpaid");
+    expect(balanceCents(40594, 20000)).toBe(20594);
   });
 });

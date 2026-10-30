@@ -79,26 +79,42 @@ export function renderEmail(
           `— ${business.displayName}`,
         ].join("\n"),
       };
-    case "quote_issued":
+    case "quote_issued": {
+      // kind: "quote" (first or revised) | "change_order" (after approval).
+      const changeOrder = str(payload, "kind") === "change_order";
+      const revision = Number(payload["revision"] ?? 1);
+      const subject = changeOrder
+        ? `${business.displayName} — updated quote for your repair (change order)`
+        : revision > 1
+          ? `${business.displayName} — your revised quote`
+          : `${business.displayName} — your quote`;
+      const intro = changeOrder
+        ? "While working on your repair we found additional work is needed. Here is the updated quote — it replaces the one you approved only if you approve this one too; otherwise the approved work stands as quoted:"
+        : revision > 1
+          ? `Here is your revised quote from ${business.displayName}. It replaces the quote we sent earlier:`
+          : `Here is your quote from ${business.displayName}:`;
       return {
         to: recipient,
-        subject: `${business.displayName} — your quote`,
+        subject,
         text: [
           `Hi ${first},`,
           "",
-          `Here is your quote from ${business.displayName}:`,
+          intro,
           "",
           str(payload, "linesText"),
           "",
           str(payload, "totalsText"),
           "",
-          "Approve the quote and the $80 diagnostic/service-call fee is waived — you pay only the quoted amount.",
+          changeOrder
+            ? "Your invoice is updated to the new total once you approve this change."
+            : "Approve the quote and the $80 diagnostic/service-call fee is waived — you pay only the quoted amount.",
           `Ready to go ahead, or have questions? Call ${business.phone} or just reply to this email.`,
           "",
           "Completed repairs carry a two-month labor warranty on the specific work performed.",
           `— ${business.displayName}`,
         ].join("\n"),
       };
+    }
     case "invoice_issued":
       return {
         to: recipient,
@@ -119,19 +135,36 @@ export function renderEmail(
           `— ${business.displayName}`,
         ].join("\n"),
       };
-    case "invoice_receipt":
+    case "payment_receipt": {
+      // One receipt per ledger row: payments and refunds alike.
+      const refund = str(payload, "kind") === "refund";
+      const receiptNumber = str(payload, "receiptNumber");
+      const amount = str(payload, "amountLabel");
+      const method = str(payload, "methodLabel");
+      const ref = str(payload, "paymentReference");
+      const paidInFull = payload["paidInFull"] === true || str(payload, "paidInFull") === "yes";
       return {
         to: recipient,
-        subject: `${business.displayName} — receipt${reference ? ` for ${reference}` : ""}`,
+        subject: `${business.displayName} — ${refund ? "refund" : "receipt"} ${receiptNumber}${reference ? ` for ${reference}` : ""}`,
         text: [
           `Hi ${first},`,
           "",
-          `Payment received${str(payload, "totalLabel") ? ` (${str(payload, "totalLabel")})` : ""}${reference ? ` for invoice ${reference}` : ""}. Thank you!`,
+          refund
+            ? `We've issued a refund of ${amount} by ${method}${ref ? ` (${ref})` : ""} on invoice ${reference}.`
+            : `Payment received — thank you! ${amount} by ${method}${ref ? ` (${ref})` : ""} on invoice ${reference}.`,
           "",
-          "Your repair is covered by our two-month labor warranty on the specific work performed.",
+          `Receipt number: ${receiptNumber}`,
+          `Invoice total: ${str(payload, "totalLabel")}`,
+          `Paid to date: ${str(payload, "paidToDateLabel")}`,
+          paidInFull ? "Balance: $0.00 — paid in full." : `Balance remaining: ${str(payload, "balanceLabel")}`,
+          "",
+          paidInFull
+            ? "Your repair is covered by our two-month labor warranty on the specific work performed."
+            : `You can settle the balance by ${str(payload, "paymentMethods") || "Zelle, Cash, Check"}. Questions? Call ${business.phone}.`,
           `— ${business.displayName}`,
         ].join("\n"),
       };
+    }
     default:
       return {
         to: recipient,

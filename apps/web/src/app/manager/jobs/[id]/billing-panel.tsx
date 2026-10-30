@@ -4,12 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BUSINESS, formatCents, subtotalCents, taxCents } from "@exactpoint/domain";
 import type { EmailDeliveryStatus, NotificationStatus } from "@exactpoint/domain";
-import {
-  decideEstimateAction,
-  emailQuote,
-  recordPaymentAction,
-  saveEstimate,
-} from "@/lib/manager/billing-actions";
+import { decideEstimateAction, emailQuote, saveEstimate } from "@/lib/manager/billing-actions";
+import { PaymentLedger, type LedgerInvoice } from "@/components/billing/payment-ledger";
 
 interface ItemRow {
   kind: "part" | "labor" | "other";
@@ -30,44 +26,78 @@ export interface QuoteEmailInfo {
   deliveryUpdatedAt: string | null;
 }
 
+export interface RevisionData {
+  id: string;
+  revision: number;
+  kind: "quote" | "change_order";
+  status: "presented" | "superseded" | "approved" | "declined";
+  taxRateBps: number;
+  diagnosticFeeCents: number;
+  notes: string | null;
+  createdAt: string;
+  decidedAt: string | null;
+  subtotalCents: number;
+  taxCents: number;
+  totalCents: number;
+  items: { kind: string; description: string; quantity: number; unitPriceCents: number }[];
+}
+
 export interface BillingData {
   workOrderId: string;
   estimate: {
     id: string;
     status: string;
-    taxRateBps: number;
-    diagnosticFeeCents: number;
-    notes: string | null;
+    currentRevisionId: string | null;
+    approvedRevisionId: string | null;
   } | null;
-  items: { kind: string; description: string; quantity: number; unitPriceCents: number }[];
-  invoices: {
-    id: string;
-    number: string;
-    status: string;
-    totalCents: number;
-    diagnosticFeeCents: number;
-    paymentMethod: string | null;
-  }[];
+  currentRevision: RevisionData | null;
+  approvedRevision: RevisionData | null;
+  revisions: RevisionData[];
+  invoices: (LedgerInvoice & { diagnosticFeeCents: number })[];
   quoteEmail: QuoteEmailInfo | null;
 }
 
 const inputCls = "rounded-lg border border-line px-2 py-1.5 text-sm";
 
-/** Estimate → decision → invoice → payment (spec §85–86). */
+function toRows(items: RevisionData["items"]): ItemRow[] {
+  return items.length > 0
+    ? items.map((i) => ({
+        kind: i.kind as ItemRow["kind"],
+        description: i.description,
+        quantity: i.quantity,
+        unitPrice: (i.unitPriceCents / 100).toFixed(2),
+      }))
+    : [{ kind: "labor", description: "", quantity: 1, unitPrice: "" }];
+}
+
+const whenFmt = new Intl.DateTimeFormat("en-US", {
+  timeZone: BUSINESS.timezone,
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+/**
+ * Quote (revisions + change orders) → decision → invoice → payments ledger
+ * (spec §42, §85–86).
+ */
 export function BillingPanel({ data }: { data: BillingData }) {
   const router = useRouter();
-  const decided = data.estimate?.status === "approved" || data.estimate?.status === "declined";
-  const [items, setItems] = useState<ItemRow[]>(
-    data.items.length > 0
-      ? data.items.map((i) => ({
-          kind: i.kind as ItemRow["kind"],
-          description: i.description,
-          quantity: i.quantity,
-          unitPrice: (i.unitPriceCents / 100).toFixed(2),
-        }))
-      : [{ kind: "labor", description: "", quantity: 1, unitPrice: "" }],
-  );
-  const [taxRate, setTaxRate] = useState(((data.estimate?.taxRateBps ?? 825) / 100).toFixed(2));
+  const estimateStatus = data.estimate?.status ?? null;
+  const current = data.currentRevision;
+  const pendingChangeOrder =
+    estimateStatus === "approved" && current?.kind === "change_order" && current.status === "presented";
+  // Editor is open while the quote is undecided, while a change order awaits a
+  // decision, or once the owner taps "Create change order" on an approved quote.
+  const [draftingChangeOrder, setDraftingChangeOrder] = useState(false);
+  const editing =
+    !data.estimate || estimateStatus === "presented" || estimateStatus === "draft" || pendingChangeOrder || draftingChangeOrder;
+
+  const seed = pendingChangeOrder || !draftingChangeOrder ? current : data.approvedRevision;
+  const [items, setItems] = useState<ItemRow[]>(toRows(seed?.items ?? []));
+  const [taxRate, setTaxRate] = useState(((seed?.taxRateBps ?? 825) / 100).toFixed(2));
+  const [notes, setNotes] = useState(seed?.notes ?? "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [sendNote, setSendNote] = useState<string | null>(null);
@@ -87,9 +117,11 @@ export function BillingPanel({ data }: { data: BillingData }) {
     return () => clearInterval(timer);
   }, [data.quoteEmail, router]);
 
-  const cents = items
-    .filter((i) => i.description.trim() && i.unitPrice !== "")
-    .map((i) => ({ quantity: i.quantity, unitPriceCents: Math.round(Number(i.unitPrice) * 100) }));
+  const validItems = items.filter((i) => i.description.trim() && i.unitPrice !== "");
+  const cents = validItems.map((i) => ({
+    quantity: i.quantity,
+    unitPriceCents: Math.round(Number(i.unitPrice) * 100),
+  }));
   const sub = subtotalCents(cents);
   const tax = taxCents(sub, Math.round(Number(taxRate) * 100));
 
@@ -98,19 +130,103 @@ export function BillingPanel({ data }: { data: BillingData }) {
     setMessage(null);
     const result = await fn();
     setBusy(false);
-    if (result.ok) router.refresh();
-    else setMessage(result.error ?? "Something went wrong.");
+    if (result.ok) {
+      setDraftingChangeOrder(false);
+      router.refresh();
+    } else setMessage(result.error ?? "Something went wrong.");
   }
+
+  const save = () =>
+    run(() =>
+      saveEstimate({
+        workOrderId: data.workOrderId,
+        items: validItems.map((i) => ({
+          kind: i.kind,
+          description: i.description,
+          quantity: i.quantity,
+          unitPriceCents: Math.round(Number(i.unitPrice) * 100),
+        })),
+        taxRateBps: Math.round(Number(taxRate) * 100),
+        notes,
+      }),
+    );
+
+  const saveLabel = !data.estimate
+    ? "Save quote"
+    : pendingChangeOrder
+      ? "Update change order"
+      : draftingChangeOrder
+        ? "Save change order"
+        : "Update quote";
 
   return (
     <section className="rounded-xl border border-line bg-white p-5">
-      <h2 className="font-bold text-navy">Quote &amp; invoice</h2>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="font-bold text-navy">Quote &amp; invoice</h2>
+        {current && (
+          <span className="text-xs font-semibold text-slate" data-testid="revision-label">
+            {pendingChangeOrder || draftingChangeOrder
+              ? `Change order · revision ${draftingChangeOrder && !pendingChangeOrder ? current.revision + 1 : current.revision}`
+              : `Revision ${current.revision}`}
+            {current.revision > 1 && !draftingChangeOrder ? ` of ${data.revisions.length}` : ""}
+          </span>
+        )}
+      </div>
       {message && (
-        <p className="mt-2 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{message}</p>
+        <p className="mt-2 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700" data-testid="billing-error">
+          {message}
+        </p>
       )}
 
-      {!decided && (
+      {estimateStatus === "approved" && !editing && data.approvedRevision && (
+        <div className="mt-3 rounded-lg bg-mist px-4 py-3 text-sm">
+          <p className="text-slate">
+            Quote <strong className="text-navy">approved</strong> (revision {data.approvedRevision.revision}) ·{" "}
+            <strong className="tabular-nums text-navy">{formatCents(data.approvedRevision.totalCents)}</strong>{" "}
+            incl. tax — invoice issued below.
+          </p>
+          <RevisionItems revision={data.approvedRevision} />
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setItems(toRows(data.approvedRevision!.items));
+              setTaxRate((data.approvedRevision!.taxRateBps / 100).toFixed(2));
+              setNotes(data.approvedRevision!.notes ?? "");
+              setMessage(null);
+              setDraftingChangeOrder(true);
+            }}
+            className="mt-3 rounded-lg border border-point px-4 py-2 text-sm font-bold text-point hover:bg-point hover:text-white disabled:opacity-50"
+          >
+            Create change order
+          </button>
+          <p className="mt-2 text-xs text-slate">
+            Found more work on site? A change order is a new revision the customer approves or
+            declines on its own. The approved quote stays as-is until they say yes; on approval the
+            invoice total updates and the balance moves with it.
+          </p>
+        </div>
+      )}
+
+      {estimateStatus === "declined" && current && (
+        <div className="mt-3 rounded-lg bg-mist px-4 py-3 text-sm">
+          <p className="text-slate">
+            Quote <strong className="text-navy">declined</strong> (revision {current.revision}) — the
+            invoice below is the diagnostic fee only. New work needs a new job.
+          </p>
+          <RevisionItems revision={current} />
+        </div>
+      )}
+
+      {editing && (
         <>
+          {pendingChangeOrder && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-4 py-2 text-sm text-amber-800" data-testid="change-order-banner">
+              Change order awaiting the customer. Their approved quote (revision{" "}
+              {data.approvedRevision?.revision}, {formatCents(data.approvedRevision?.totalCents ?? 0)}) stands
+              until they approve this one.
+            </p>
+          )}
           <div className="mt-3 space-y-2">
             {items.map((item, i) => (
               <div key={i} className="flex flex-wrap items-center gap-2">
@@ -191,31 +307,32 @@ export function BillingPanel({ data }: { data: BillingData }) {
               <strong className="text-navy">Total {formatCents(sub + tax)}</strong>
             </span>
           </div>
+          <input
+            placeholder="Notes for the customer (optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className={`${inputCls} mt-2 w-full`}
+            aria-label="Quote notes"
+          />
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               disabled={busy || cents.length === 0}
-              onClick={() =>
-                run(() =>
-                  saveEstimate({
-                    workOrderId: data.workOrderId,
-                    items: items
-                      .filter((i) => i.description.trim() && i.unitPrice !== "")
-                      .map((i) => ({
-                        kind: i.kind,
-                        description: i.description,
-                        quantity: i.quantity,
-                        unitPriceCents: Math.round(Number(i.unitPrice) * 100),
-                      })),
-                    taxRateBps: Math.round(Number(taxRate) * 100),
-                  }),
-                )
-              }
+              onClick={save}
               className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white hover:bg-navy-soft disabled:opacity-50"
             >
-              {data.estimate ? "Update quote" : "Save quote"}
+              {saveLabel}
             </button>
-            {data.estimate && (
+            {draftingChangeOrder && !pendingChangeOrder && (
+              <button
+                type="button"
+                onClick={() => setDraftingChangeOrder(false)}
+                className="rounded-lg border border-line px-4 py-2 text-sm font-bold text-slate hover:border-point"
+              >
+                Cancel
+              </button>
+            )}
+            {data.estimate && current?.status === "presented" && !(draftingChangeOrder && !pendingChangeOrder) && (
               <button
                 type="button"
                 disabled={busy || data.quoteEmail?.status === "pending"}
@@ -226,7 +343,7 @@ export function BillingPanel({ data }: { data: BillingData }) {
                   const result = await emailQuote(data.estimate!.id);
                   setBusy(false);
                   if (result.ok) {
-                    setSendNote(result.warnings?.[0] ?? "Quote emailed.");
+                    setSendNote(result.warnings?.[0] ?? (pendingChangeOrder ? "Change order emailed." : "Quote emailed."));
                     router.refresh();
                   } else {
                     setMessage(result.error);
@@ -234,13 +351,19 @@ export function BillingPanel({ data }: { data: BillingData }) {
                 }}
                 className="rounded-lg border border-point px-4 py-2 text-sm font-bold text-point hover:bg-point hover:text-white disabled:opacity-50"
               >
-                {data.quoteEmail ? "Resend quote" : "Email quote to customer"}
+                {data.quoteEmail
+                  ? pendingChangeOrder
+                    ? "Resend change order"
+                    : "Resend quote"
+                  : pendingChangeOrder
+                    ? "Email change order to customer"
+                    : "Email quote to customer"}
               </button>
             )}
             {sendNote && (
               <span className="self-center text-sm font-semibold text-emerald-700">{sendNote}</span>
             )}
-            {data.estimate && (
+            {data.estimate && current?.status === "presented" && !(draftingChangeOrder && !pendingChangeOrder) && (
               <>
                 <button
                   type="button"
@@ -250,7 +373,7 @@ export function BillingPanel({ data }: { data: BillingData }) {
                   }
                   className="rounded-lg bg-point px-4 py-2 text-sm font-bold text-white hover:bg-point-deep disabled:opacity-50"
                 >
-                  Customer approved
+                  {pendingChangeOrder ? "Customer approved change" : "Customer approved"}
                 </button>
                 <button
                   type="button"
@@ -260,66 +383,102 @@ export function BillingPanel({ data }: { data: BillingData }) {
                   }
                   className="rounded-lg border border-line px-4 py-2 text-sm font-bold text-slate hover:border-point disabled:opacity-50"
                 >
-                  Customer declined
+                  {pendingChangeOrder ? "Customer declined change" : "Customer declined"}
                 </button>
               </>
             )}
           </div>
-          {data.quoteEmail && <QuoteEmailStatus email={data.quoteEmail} />}
+          {data.quoteEmail && !(draftingChangeOrder && !pendingChangeOrder) && (
+            <QuoteEmailStatus email={data.quoteEmail} changeOrder={pendingChangeOrder} />
+          )}
           <p className="mt-2 text-xs text-slate">
-            Approved → the ${(data.estimate?.diagnosticFeeCents ?? 8000) / 100} diagnostic fee is
-            waived and the invoice covers the quote. Declined → the invoice is the
-            diagnostic fee only.
+            {pendingChangeOrder || draftingChangeOrder ? (
+              <>
+                Every save is a new revision — re-send after changes. Approving the change rebuilds the
+                invoice from it; declining leaves the approved quote and invoice untouched.
+              </>
+            ) : (
+              <>
+                Approved → the ${(current?.diagnosticFeeCents ?? 8000) / 100} diagnostic fee is waived and the
+                invoice covers the quote. Declined → the invoice is the diagnostic fee only. Every save is a
+                new revision — the customer should get the latest one, so re-send after changes.
+              </>
+            )}
           </p>
         </>
       )}
 
-      {decided && (
-        <p className="mt-2 text-sm text-slate">
-          Quote <strong className="text-navy">{data.estimate!.status}</strong> — invoice issued below.
-        </p>
-      )}
+      {data.revisions.length > 1 && <RevisionHistory revisions={data.revisions} />}
 
       {data.invoices.length > 0 && (
-        <ul className="mt-4 space-y-2">
+        <ul className="mt-4 space-y-3">
           {data.invoices.map((inv) => (
-            <li
-              key={inv.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-mist px-4 py-3 text-sm"
-            >
-              <span className="font-bold text-navy">
+            <li key={inv.id} className="rounded-lg bg-mist px-4 py-3 text-sm">
+              <p className="mb-2 font-bold text-navy">
                 <a href={`/manager/invoices/${inv.id}`} className="hover:text-point">
                   {inv.number}
-                </a>{" "}
-                · {formatCents(inv.totalCents)}
+                </a>
                 {inv.diagnosticFeeCents > 0 && (
                   <span className="ml-1 font-normal text-slate">(diagnostic fee)</span>
                 )}
-              </span>
-              {inv.status === "paid" ? (
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                  Paid · {inv.paymentMethod}
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  {(["zelle", "cash", "check"] as const).map((method) => (
-                    <button
-                      key={method}
-                      type="button"
-                      disabled={busy}
-                      onClick={() => run(() => recordPaymentAction({ invoiceId: inv.id, method }))}
-                      className="rounded-lg border border-line bg-white px-3 py-1 text-xs font-bold text-navy hover:border-point disabled:opacity-50"
-                    >
-                      Paid by {method}
-                    </button>
-                  ))}
-                </span>
-              )}
+              </p>
+              <PaymentLedger invoice={inv} compact />
             </li>
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+function RevisionItems({ revision }: { revision: RevisionData }) {
+  return (
+    <ul className="mt-2 space-y-0.5 text-xs text-slate">
+      {revision.items.map((i, idx) => (
+        <li key={idx} className="flex justify-between gap-3">
+          <span>
+            {i.description} <span className="text-slate/70">×{i.quantity}</span>
+          </span>
+          <span className="tabular-nums">{formatCents(i.quantity * i.unitPriceCents)}</span>
+        </li>
+      ))}
+      {revision.notes && <li className="pt-1 italic">{revision.notes}</li>}
+    </ul>
+  );
+}
+
+const REV_STATUS_LABEL: Record<RevisionData["status"], string> = {
+  presented: "awaiting customer",
+  superseded: "superseded",
+  approved: "approved",
+  declined: "declined",
+};
+
+/** Every revision the customer was ever shown, read-only — nothing is overwritten. */
+function RevisionHistory({ revisions }: { revisions: RevisionData[] }) {
+  return (
+    <details className="mt-3 rounded-lg border border-line px-4 py-2 text-sm" data-testid="revision-history">
+      <summary className="cursor-pointer font-semibold text-navy">
+        Quote history · {revisions.length} revisions
+      </summary>
+      <ul className="mt-2 divide-y divide-line">
+        {[...revisions].reverse().map((r) => (
+          <li key={r.id} className="py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="font-semibold text-navy">
+                Revision {r.revision}
+                {r.kind === "change_order" && <span className="ml-1 font-normal text-slate">(change order)</span>}
+              </span>
+              <span className="text-xs text-slate">
+                {REV_STATUS_LABEL[r.status]} · {whenFmt.format(new Date(r.decidedAt ?? r.createdAt))} ·{" "}
+                <strong className="tabular-nums text-navy">{formatCents(r.totalCents)}</strong>
+              </span>
+            </div>
+            <RevisionItems revision={r} />
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
@@ -354,22 +513,15 @@ function describeQuoteEmail(email: QuoteEmailInfo): {
   }
 }
 
-const whenFmt = new Intl.DateTimeFormat("en-US", {
-  timeZone: BUSINESS.timezone,
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-});
-
-function QuoteEmailStatus({ email }: { email: QuoteEmailInfo }) {
+function QuoteEmailStatus({ email, changeOrder }: { email: QuoteEmailInfo; changeOrder: boolean }) {
   const d = describeQuoteEmail(email);
   const when = email.deliveryUpdatedAt ?? email.sentAt ?? email.createdAt;
   return (
     <p className="mt-3 flex flex-wrap items-center gap-2 text-sm" data-testid="quote-email-status">
       <span className={`rounded-full px-3 py-1 text-xs font-bold ${TONE_CLS[d.tone]}`}>{d.label}</span>
       <span className="text-slate">
-        Quote email to <strong className="text-navy">{email.recipient}</strong> · {whenFmt.format(new Date(when))}
+        {changeOrder ? "Change order" : "Quote"} email to{" "}
+        <strong className="text-navy">{email.recipient}</strong> · {whenFmt.format(new Date(when))}
       </span>
       {d.detail && <span className="basis-full text-xs text-slate">{d.detail}</span>}
     </p>

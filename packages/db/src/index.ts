@@ -26,8 +26,15 @@ export {
 export {
   billingForWorkOrder,
   decideEstimate,
+  invoiceLedger,
+  invoicesForWorkOrders,
+  paidCentsExpr,
+  paymentReceipt,
   recordInvoicePayment,
-  upsertEstimate,
+  saveEstimateRevision,
+  type EstimateItemInput,
+  type RecordPaymentInput,
+  type RecordPaymentResult,
 } from "./operations/billing";
 export {
   activeWarrantiesForCustomer,

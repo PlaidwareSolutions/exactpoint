@@ -142,9 +142,10 @@ test("journey A: attributed booking → quote → invoice → completion → pay
     timeout: 10_000,
   });
 
-  // Record the payment (emits the revenue increment for this invoice).
-  await page.getByRole("button", { name: "Paid by zelle" }).click();
-  await expect(page.getByText(/^paid/i).first()).toBeVisible({ timeout: 10_000 });
+  // Record the payment in full (emits the revenue increment for this ledger row).
+  await page.getByRole("button", { name: "Record payment" }).click();
+  await page.getByRole("button", { name: "Save payment" }).click();
+  await expect(page.getByTestId("ledger-message")).toContainText("Paid in full", { timeout: 10_000 });
 });
 
 test("journey B: attributed booking → cancellation", async ({ page }) => {

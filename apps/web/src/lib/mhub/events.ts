@@ -125,21 +125,23 @@ export function emitJobCompleted(
 }
 
 /**
- * One revenue increment per paid invoice — the invoice id in the key means a
- * re-recorded payment dedupes while a second invoice on the same job adds.
- * Never send a running total: MHub sums across events.
+ * One revenue increment per ledger row — the payment id in the key means a
+ * retried action dedupes while each partial payment on the same invoice
+ * adds; a refund sends a negative increment. Never send a running total:
+ * MHub sums across events.
  */
 export function emitJobRevenue(
   leadId: string,
   input: {
-    invoiceId: string;
+    /** Ledger row id — one increment per payment, negative for refunds. */
+    paymentId: string;
     revenueCents: number;
     technicianFirstName?: string | null;
     email?: string | null;
     phone?: string | null;
   },
 ): void {
-  emit("job_completed", leadId, `${leadId}:job_completed:rev:${input.invoiceId}`, {
+  emit("job_completed", leadId, `${leadId}:job_completed:rev:${input.paymentId}`, {
     revenue_cents: input.revenueCents,
     technician: input.technicianFirstName ?? undefined,
     contact_email: input.email || undefined,

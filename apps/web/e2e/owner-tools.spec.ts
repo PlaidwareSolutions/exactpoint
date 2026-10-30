@@ -97,6 +97,7 @@ test("help page serves the handbook to signed-in users only", async ({ page }) =
 });
 
 test("estimate → approval → invoice → email, end to end", async ({ page }, testInfo) => {
+  test.setTimeout(180_000); // one long journey: quote → invoice → ledger → receipts → change orders
   const email = `billing-e2e-${testInfo.project.name}@example.com`;
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
   // Reset this project's fixture, then seed customer → work order → appointment.
@@ -105,9 +106,11 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
      wo AS (SELECT id FROM work_orders WHERE customer_id IN (SELECT id FROM c)),
      appt AS (SELECT id FROM appointments WHERE work_order_id IN (SELECT id FROM wo)),
      est AS (SELECT id FROM estimates WHERE work_order_id IN (SELECT id FROM wo)),
+     inv AS (SELECT id FROM invoices WHERE work_order_id IN (SELECT id FROM wo)),
      d0 AS (DELETE FROM notifications WHERE recipient = $1),
-     d1 AS (DELETE FROM invoices WHERE work_order_id IN (SELECT id FROM wo)),
-     d2 AS (DELETE FROM estimate_items WHERE estimate_id IN (SELECT id FROM est)),
+     dp AS (DELETE FROM invoice_payments WHERE invoice_id IN (SELECT id FROM inv)),
+     d1 AS (DELETE FROM invoices WHERE id IN (SELECT id FROM inv)),
+     d2 AS (DELETE FROM estimate_revisions WHERE estimate_id IN (SELECT id FROM est)),
      d3 AS (DELETE FROM estimates WHERE id IN (SELECT id FROM est)),
      d4 AS (DELETE FROM job_status_history WHERE appointment_id IN (SELECT id FROM appt)),
      d5 AS (DELETE FROM appointments WHERE id IN (SELECT id FROM appt)),
@@ -165,6 +168,71 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
   expect(queued.rowCount).toBe(1);
   expect(JSON.stringify(queued.rows[0].payload)).toContain("Drain pump replacement");
 
+  // Partial payment: $185 + 8.25% tax = $200.26 due. A $100 deposit leaves $100.26.
+  await expect(page.getByTestId("balance-due")).toHaveText("$200.26");
+  await page.getByRole("button", { name: "Record payment" }).click();
+  await expect(page.getByLabel("Amount")).toHaveValue("200.26"); // prefilled with the balance
+  await page.getByLabel("Amount").fill("100");
+  await page.getByLabel("Method").selectOption("check");
+  await page.getByLabel("Reference").fill("1042");
+  await page.getByRole("button", { name: "Save payment" }).click();
+  await expect(page.getByTestId("ledger-message")).toContainText(/receipt RCT-\d+ · balance \$100\.26/, {
+    timeout: 15_000,
+  });
+  await expect(page.getByTestId("balance-due")).toHaveText("$100.26");
+  await expect(page.getByTestId("invoice-status").first()).toHaveText("PARTIALLY PAID");
+  // One receipt email per payment, with running totals.
+  const receipt1 = await pool.query(
+    `SELECT payload FROM notifications WHERE recipient = $1 AND template = 'payment_receipt' ORDER BY created_at`,
+    [email],
+  );
+  expect(receipt1.rowCount).toBe(1);
+  expect(receipt1.rows[0].payload).toMatchObject({
+    amountLabel: "$100.00",
+    methodLabel: "Check",
+    paymentReference: "1042",
+    paidToDateLabel: "$100.00",
+    balanceLabel: "$100.26",
+    paidInFull: false,
+  });
+
+  // Overpaying is refused with the balance spelled out.
+  await page.getByRole("button", { name: "Record payment" }).click();
+  await page.getByLabel("Amount").fill("150");
+  await page.getByRole("button", { name: "Save payment" }).click();
+  await expect(page.getByTestId("ledger-message")).toContainText("more than the $100.26 balance");
+
+  // Final payment → paid in full; the second receipt says so.
+  await page.getByLabel("Amount").fill("100.26");
+  await page.getByLabel("Method").selectOption("zelle");
+  await page.getByRole("button", { name: "Save payment" }).click();
+  await expect(page.getByTestId("ledger-message")).toContainText("Paid in full", { timeout: 15_000 });
+  await expect(page.getByTestId("balance-due")).toContainText("paid in full");
+  await expect(page.getByRole("button", { name: "Record payment" })).toHaveCount(0);
+  const receipts = await pool.query(
+    `SELECT payload FROM notifications WHERE recipient = $1 AND template = 'payment_receipt' ORDER BY created_at`,
+    [email],
+  );
+  expect(receipts.rowCount).toBe(2);
+  expect(receipts.rows[1].payload).toMatchObject({ paidInFull: true, paidToDateLabel: "$200.26" });
+
+  // Printable receipt per payment; re-sending within a minute never duplicates.
+  const receiptLinks = page.getByRole("link", { name: "Print receipt" });
+  await expect(receiptLinks).toHaveCount(2);
+  await receiptLinks.first().click();
+  await expect(page).toHaveURL(/\/receipts\//);
+  await expect(page.getByTestId("receipt-number")).toHaveText(/^RCT-\d+$/);
+  await expect(page.getByTestId("receipt-balance")).toHaveText("$100.26"); // as issued, not today's
+  await page.getByRole("button", { name: "Email receipt to customer" }).click();
+  await expect(page.getByText(/not sending twice/)).toBeVisible({ timeout: 15_000 });
+  const stillTwo = await pool.query(
+    `SELECT id FROM notifications WHERE recipient = $1 AND template = 'payment_receipt'`,
+    [email],
+  );
+  expect(stillTwo.rowCount).toBe(2);
+  await page.goBack();
+  await expect(page.getByTestId("balance-due")).toBeVisible();
+
   // Capture the invoice number for search assertions.
   const invoiceNumber = (await page.locator("text=/INV-\\d+/").first().textContent())?.trim();
   expect(invoiceNumber).toMatch(/^INV-\d+$/);
@@ -182,6 +250,11 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
   await page.goto(`/manager/search?q=${invoiceNumber}`);
   await expect(page.getByRole("link", { name: new RegExp(invoiceNumber!) })).toBeVisible();
 
+  // Invoices list: the paid invoice shows a zero balance; filter chips include "partially paid".
+  await page.goto("/manager/invoices?status=paid");
+  await expect(page.getByRole("link", { name: "partially paid" })).toBeVisible();
+  await expect(page.getByRole("row", { name: new RegExp(invoiceNumber!) })).toContainText("$0.00");
+
   // Quote-first flow: create a standalone quote from the customer page,
   // save a line, and email it (spec follow-up to Shams's field report).
   await page.goto(`/manager/customers/${customer.rows[0].id}`);
@@ -190,6 +263,12 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
   await page.getByPlaceholder("Description").fill("Compressor replacement (quote)");
   await page.getByLabel("Unit price").fill("650.00");
   await page.getByRole("button", { name: "Save quote" }).click();
+  await expect(page.getByTestId("revision-label")).toHaveText("Revision 1");
+  // Editing before a decision = a new revision; the old one stays in the history.
+  await page.getByLabel("Unit price").fill("625.00");
+  await page.getByRole("button", { name: "Update quote" }).click();
+  await expect(page.getByTestId("revision-label")).toHaveText("Revision 2 of 2", { timeout: 15_000 });
+  await expect(page.getByTestId("revision-history")).toContainText("Quote history · 2 revisions");
   await page.getByRole("button", { name: "Email quote to customer" }).click();
   await expect(page.getByText("Quote emailed.")).toBeVisible({ timeout: 15_000 });
   const quotedEmail = await pool.query(
@@ -198,6 +277,7 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
   );
   expect(quotedEmail.rowCount).toBe(1);
   expect(JSON.stringify(quotedEmail.rows[0].payload)).toContain("Compressor replacement");
+  expect(quotedEmail.rows[0].payload).toMatchObject({ revision: 2, kind: "quote" });
 
   // Delivery status: queued → the chip says so and the button is parked until the worker sends it.
   const status = page.getByTestId("quote-email-status");
@@ -259,6 +339,49 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
   expect(forged.status()).toBe(401);
   await page.reload();
   await expect(status).toContainText("Delivered", { timeout: 15_000 });
+
+  // Approve revision 2 → invoice for $625 + tax. Then a change order on site.
+  await page.getByRole("button", { name: "Customer approved" }).click();
+  await expect(page.getByRole("button", { name: "Create change order" })).toBeVisible({ timeout: 15_000 });
+  const quoteInvoice = page.getByRole("link", { name: /INV-\d+/ });
+  await expect(quoteInvoice).toBeVisible();
+  await page.getByRole("button", { name: "Create change order" }).click();
+  await page.getByRole("button", { name: "+ Add line" }).click();
+  await page.getByPlaceholder("Description").nth(1).fill("Refrigerant recharge");
+  await page.getByLabel("Unit price").nth(1).fill("120.00");
+  await page.getByRole("button", { name: "Save change order" }).click();
+  await expect(page.getByTestId("change-order-banner")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("revision-label")).toContainText("Change order · revision 3");
+  // The customer says no → approved quote and invoice are untouched.
+  await page.getByRole("button", { name: "Customer declined change" }).click();
+  await expect(page.getByRole("button", { name: "Create change order" })).toBeVisible({ timeout: 15_000 });
+  const invoiceAfterDecline = await pool.query(
+    `SELECT i.total_cents, i.status FROM invoices i JOIN work_orders w ON w.id = i.work_order_id
+     JOIN customers c ON c.id = w.customer_id WHERE c.email = $1 ORDER BY i.created_at DESC LIMIT 1`,
+    [email],
+  );
+  expect(invoiceAfterDecline.rows[0]).toMatchObject({ total_cents: 67656, status: "unpaid" }); // 625 × 1.0825
+  // Second change order, approved → invoice rebuilt from revision 4.
+  await page.getByRole("button", { name: "Create change order" }).click();
+  await page.getByRole("button", { name: "+ Add line" }).click();
+  await page.getByPlaceholder("Description").nth(1).fill("Refrigerant recharge");
+  await page.getByLabel("Unit price").nth(1).fill("120.00");
+  await page.getByRole("button", { name: "Save change order" }).click();
+  await page.getByRole("button", { name: "Email change order to customer" }).click();
+  await expect(page.getByText("Change order emailed.")).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Customer approved change" }).click();
+  await expect(page.getByText(/Quote approved \(revision 4\)/)).toBeVisible({ timeout: 15_000 });
+  const invoiceAfterApprove = await pool.query(
+    `SELECT i.total_cents FROM invoices i JOIN work_orders w ON w.id = i.work_order_id
+     JOIN customers c ON c.id = w.customer_id WHERE c.email = $1 ORDER BY i.created_at DESC LIMIT 1`,
+    [email],
+  );
+  expect(invoiceAfterApprove.rows[0].total_cents).toBe(80646); // (625 + 120) × 1.0825
+  const changeOrderEmail = await pool.query(
+    `SELECT payload FROM notifications WHERE recipient = $1 AND template = 'quote_issued' ORDER BY created_at DESC LIMIT 1`,
+    [email],
+  );
+  expect(changeOrderEmail.rows[0].payload).toMatchObject({ kind: "change_order", revision: 4 });
 
   // Edit customer details and verify persistence.
   await page.goto(`/manager/customers/${customer.rows[0].id}`);

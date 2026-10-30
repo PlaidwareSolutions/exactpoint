@@ -7,12 +7,12 @@ import {
   customers,
   equipment,
   getDb,
-  invoices,
+  invoicesForWorkOrders,
   serviceRequests,
   serviceTypes,
   workOrders,
 } from "@exactpoint/db";
-import { BUSINESS, formatCents } from "@exactpoint/domain";
+import { BUSINESS, INVOICE_STATUS_LABELS, formatCents } from "@exactpoint/domain";
 import { CreateQuoteButton } from "./create-quote-button";
 import { EditCustomerForm } from "./edit-customer-form";
 
@@ -70,11 +70,7 @@ export default async function CustomerDetailPage({
             .from(appointments)
             .where(inArray(appointments.workOrderId, orderIds))
             .orderBy(desc(appointments.windowStart)),
-          db
-            .select()
-            .from(invoices)
-            .where(inArray(invoices.workOrderId, orderIds))
-            .orderBy(desc(invoices.createdAt)),
+          invoicesForWorkOrders(db, orderIds),
         ])
       : [[], []];
 
@@ -203,10 +199,15 @@ export default async function CustomerDetailPage({
                       className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
                         inv.status === "paid"
                           ? "bg-emerald-50 text-emerald-700"
-                          : "bg-point/10 text-point"
+                          : inv.status === "partially_paid"
+                            ? "bg-amber-50 text-amber-700"
+                            : "bg-point/10 text-point"
                       }`}
                     >
-                      {inv.number} · {formatCents(inv.totalCents)} · {inv.status}
+                      {inv.number} · {formatCents(inv.totalCents)} ·{" "}
+                      {inv.status === "partially_paid"
+                        ? `${formatCents(inv.totalCents - inv.paidCents)} due`
+                        : (INVOICE_STATUS_LABELS[inv.status] ?? inv.status).toLowerCase()}
                     </Link>
                   ))}
                 </div>

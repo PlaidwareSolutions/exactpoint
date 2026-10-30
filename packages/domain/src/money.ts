@@ -61,3 +61,49 @@ export function invoiceAmountsForDecision(
 export function formatCents(cents: number): string {
   return (cents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
+
+/* ---------- payments ledger (spec §42 — partial payments, refunds) ---------- */
+
+export interface LedgerRowAmount {
+  kind: "payment" | "refund";
+  amountCents: number;
+}
+
+/** Net amount received: payments minus refunds. */
+export function paidCents(rows: LedgerRowAmount[]): number {
+  return rows.reduce(
+    (sum, row) => sum + (row.kind === "payment" ? row.amountCents : -row.amountCents),
+    0,
+  );
+}
+
+export function balanceCents(totalCents: number, paid: number): number {
+  return totalCents - paid;
+}
+
+/**
+ * Invoice status is a pure function of total vs. net paid, so it can never
+ * drift from the ledger. "void" is handled by the caller — a void invoice
+ * takes no payments.
+ */
+export function invoiceStatusFor(
+  totalCents: number,
+  paid: number,
+): "unpaid" | "partially_paid" | "paid" {
+  if (paid <= 0) return "unpaid";
+  if (paid >= totalCents) return "paid";
+  return "partially_paid";
+}
+
+export const INVOICE_STATUS_LABELS: Record<string, string> = {
+  unpaid: "Unpaid",
+  partially_paid: "Partially paid",
+  paid: "Paid",
+  void: "Void",
+};
+
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  zelle: "Zelle",
+  cash: "Cash",
+  check: "Check",
+};
