@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { formatCents, subtotalCents, taxCents } from "@exactpoint/domain";
+import { BUSINESS, formatCents, subtotalCents, taxCents } from "@exactpoint/domain";
+import type { EmailDeliveryStatus, NotificationStatus } from "@exactpoint/domain";
 import {
   decideEstimateAction,
   emailQuote,
@@ -15,6 +16,18 @@ interface ItemRow {
   description: string;
   quantity: number;
   unitPrice: string; // dollars in the input
+}
+
+/** Latest "Email quote" send and what the email provider reported about it. */
+export interface QuoteEmailInfo {
+  status: NotificationStatus;
+  delivery: EmailDeliveryStatus | null;
+  deliveryDetail: string | null;
+  recipient: string;
+  error: string | null;
+  createdAt: string;
+  sentAt: string | null;
+  deliveryUpdatedAt: string | null;
 }
 
 export interface BillingData {
@@ -35,6 +48,7 @@ export interface BillingData {
     diagnosticFeeCents: number;
     paymentMethod: string | null;
   }[];
+  quoteEmail: QuoteEmailInfo | null;
 }
 
 const inputCls = "rounded-lg border border-line px-2 py-1.5 text-sm";
@@ -56,7 +70,22 @@ export function BillingPanel({ data }: { data: BillingData }) {
   const [taxRate, setTaxRate] = useState(((data.estimate?.taxRateBps ?? 825) / 100).toFixed(2));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [quoteSent, setQuoteSent] = useState(false);
+  const [sendNote, setSendNote] = useState<string | null>(null);
+
+  // While a quote email is queued or awaiting the provider's delivery
+  // report, re-read the page every few seconds so the status chip updates.
+  useEffect(() => {
+    const email = data.quoteEmail;
+    if (!email) return;
+    const awaiting =
+      email.status === "pending" ||
+      (email.status === "sent" &&
+        (email.delivery === null || email.delivery === "sent" || email.delivery === "delivery_delayed"));
+    if (!awaiting) return;
+    if (Date.now() - new Date(email.createdAt).getTime() > 10 * 60_000) return;
+    const timer = setInterval(() => router.refresh(), 10_000);
+    return () => clearInterval(timer);
+  }, [data.quoteEmail, router]);
 
   const cents = items
     .filter((i) => i.description.trim() && i.unitPrice !== "")
@@ -189,25 +218,27 @@ export function BillingPanel({ data }: { data: BillingData }) {
             {data.estimate && (
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || data.quoteEmail?.status === "pending"}
                 onClick={async () => {
                   setBusy(true);
                   setMessage(null);
-                  setQuoteSent(false);
+                  setSendNote(null);
                   const result = await emailQuote(data.estimate!.id);
                   setBusy(false);
-                  if (result.ok) setQuoteSent(true);
-                  else setMessage(result.error);
+                  if (result.ok) {
+                    setSendNote(result.warnings?.[0] ?? "Quote emailed.");
+                    router.refresh();
+                  } else {
+                    setMessage(result.error);
+                  }
                 }}
                 className="rounded-lg border border-point px-4 py-2 text-sm font-bold text-point hover:bg-point hover:text-white disabled:opacity-50"
               >
-                Email quote to customer
+                {data.quoteEmail ? "Resend quote" : "Email quote to customer"}
               </button>
             )}
-            {quoteSent && (
-              <span className="self-center text-sm font-semibold text-emerald-700">
-                Quote emailed.
-              </span>
+            {sendNote && (
+              <span className="self-center text-sm font-semibold text-emerald-700">{sendNote}</span>
             )}
             {data.estimate && (
               <>
@@ -234,6 +265,7 @@ export function BillingPanel({ data }: { data: BillingData }) {
               </>
             )}
           </div>
+          {data.quoteEmail && <QuoteEmailStatus email={data.quoteEmail} />}
           <p className="mt-2 text-xs text-slate">
             Approved → the ${(data.estimate?.diagnosticFeeCents ?? 8000) / 100} diagnostic fee is
             waived and the invoice covers the quote. Declined → the invoice is the
@@ -288,5 +320,58 @@ export function BillingPanel({ data }: { data: BillingData }) {
         </ul>
       )}
     </section>
+  );
+}
+
+const TONE_CLS = {
+  ok: "bg-emerald-50 text-emerald-700",
+  warn: "bg-amber-50 text-amber-700",
+  bad: "bg-red-50 text-red-700",
+  muted: "bg-mist text-slate",
+} as const;
+
+/** Plain-language delivery state for the owner (spec §57 — honest wording, no guessing). */
+function describeQuoteEmail(email: QuoteEmailInfo): {
+  label: string;
+  tone: keyof typeof TONE_CLS;
+  detail?: string | null;
+} {
+  if (email.status === "failed") return { label: "Failed to send", tone: "bad", detail: email.error };
+  if (email.status === "pending") return { label: "Sending…", tone: "muted" };
+  switch (email.delivery) {
+    case "delivered":
+      return { label: "Delivered", tone: "ok" };
+    case "bounced":
+      return { label: "Bounced — address rejected it", tone: "bad", detail: email.deliveryDetail };
+    case "complained":
+      return { label: "Marked as spam by the recipient", tone: "bad" };
+    case "failed":
+      return { label: "Delivery failed", tone: "bad", detail: email.deliveryDetail };
+    case "delivery_delayed":
+      return { label: "Delayed — their mailbox isn't accepting yet", tone: "warn" };
+    default:
+      return { label: "Sent — awaiting delivery confirmation", tone: "muted" };
+  }
+}
+
+const whenFmt = new Intl.DateTimeFormat("en-US", {
+  timeZone: BUSINESS.timezone,
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+function QuoteEmailStatus({ email }: { email: QuoteEmailInfo }) {
+  const d = describeQuoteEmail(email);
+  const when = email.deliveryUpdatedAt ?? email.sentAt ?? email.createdAt;
+  return (
+    <p className="mt-3 flex flex-wrap items-center gap-2 text-sm" data-testid="quote-email-status">
+      <span className={`rounded-full px-3 py-1 text-xs font-bold ${TONE_CLS[d.tone]}`}>{d.label}</span>
+      <span className="text-slate">
+        Quote email to <strong className="text-navy">{email.recipient}</strong> · {whenFmt.format(new Date(when))}
+      </span>
+      {d.detail && <span className="basis-full text-xs text-slate">{d.detail}</span>}
+    </p>
   );
 }

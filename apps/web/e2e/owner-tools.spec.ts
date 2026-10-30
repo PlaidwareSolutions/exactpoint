@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import pg from "pg";
 
@@ -197,6 +198,67 @@ test("estimate → approval → invoice → email, end to end", async ({ page },
   );
   expect(quotedEmail.rowCount).toBe(1);
   expect(JSON.stringify(quotedEmail.rows[0].payload)).toContain("Compressor replacement");
+
+  // Delivery status: queued → the chip says so and the button is parked until the worker sends it.
+  const status = page.getByTestId("quote-email-status");
+  await expect(status).toContainText("Sending…", { timeout: 15_000 });
+  await expect(status).toContainText(email);
+  await expect(page.getByRole("button", { name: "Resend quote" })).toBeDisabled();
+
+  // Simulate the worker: Resend accepted the message.
+  const providerId = `e2e-msg-${Date.now()}`;
+  await pool.query(
+    `UPDATE notifications SET status = 'sent', sent_at = now(), provider_message_id = $2
+     WHERE recipient = $1 AND template = 'quote_issued'`,
+    [email, providerId],
+  );
+  await page.reload();
+  await expect(status).toContainText("awaiting delivery confirmation", { timeout: 15_000 });
+
+  // A second tap right after a send is a no-op, never a duplicate email.
+  await page.getByRole("button", { name: "Resend quote" }).click();
+  await expect(page.getByText(/not sending twice/)).toBeVisible({ timeout: 15_000 });
+  const stillOne = await pool.query(
+    `SELECT id FROM notifications WHERE recipient = $1 AND template = 'quote_issued'`,
+    [email],
+  );
+  expect(stillOne.rowCount).toBe(1);
+
+  // Resend's delivery webhook (signed) flips the chip to Delivered; a forged one is refused.
+  const secret = process.env.RESEND_WEBHOOK_SECRET!;
+  const body = JSON.stringify({
+    type: "email.delivered",
+    created_at: new Date().toISOString(),
+    data: { email_id: providerId, to: [email], subject: "your quote" },
+  });
+  const svixId = `msg_e2e_${Date.now()}`;
+  const svixTs = String(Math.floor(Date.now() / 1000));
+  const signature = `v1,${createHmac("sha256", Buffer.from(secret.slice(6), "base64"))
+    .update(`${svixId}.${svixTs}.${body}`)
+    .digest("base64")}`;
+  const hook = await page.request.post("/api/webhooks/resend", {
+    headers: {
+      "content-type": "application/json",
+      "svix-id": svixId,
+      "svix-timestamp": svixTs,
+      "svix-signature": signature,
+    },
+    data: body,
+  });
+  expect(hook.status()).toBe(200);
+  expect(await hook.json()).toEqual({ outcome: "updated" });
+  const forged = await page.request.post("/api/webhooks/resend", {
+    headers: {
+      "content-type": "application/json",
+      "svix-id": svixId,
+      "svix-timestamp": svixTs,
+      "svix-signature": "v1,AAAA",
+    },
+    data: body,
+  });
+  expect(forged.status()).toBe(401);
+  await page.reload();
+  await expect(status).toContainText("Delivered", { timeout: 15_000 });
 
   // Edit customer details and verify persistence.
   await page.goto(`/manager/customers/${customer.rows[0].id}`);

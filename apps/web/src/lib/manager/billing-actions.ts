@@ -9,6 +9,7 @@ import {
   customers,
   decideEstimate,
   enqueueEmail,
+  enqueueEmailOnce,
   estimateItems,
   estimates,
   getDb,
@@ -134,7 +135,7 @@ export async function createQuoteDraft(
   return { ok: true, workOrderId: wo!.id };
 }
 
-/** Emails the current quote (undecided estimate) to the customer. */
+/** Emails the current quote (undecided estimate) to the customer — safe to tap twice. */
 export async function emailQuote(estimateId: string): Promise<ActionResult> {
   const session = await requireOwner();
   const parsed = z.uuid().safeParse(estimateId);
@@ -163,9 +164,13 @@ export async function emailQuote(estimateId: string): Promise<ActionResult> {
   const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
   const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
   const tax = Math.round((subtotal * estimate.taxRateBps) / 10_000);
-  await enqueueEmail(db, {
+  // Idempotent: a double-tap, or a retry while the previous send is still
+  // queued / just went out, reuses that send instead of emailing twice.
+  const queued = await enqueueEmailOnce(db, {
     template: "quote_issued",
     recipient: customer.email,
+    entity: { type: "estimate", id: estimate.id },
+    dedupeWindowSeconds: 60,
     payload: {
       firstName: customer.firstName,
       linesText: items
@@ -178,13 +183,23 @@ export async function emailQuote(estimateId: string): Promise<ActionResult> {
       ].join("\n"),
     },
   });
+  if (!queued.queued) {
+    return {
+      ok: true,
+      warnings: [
+        queued.reason === "pending"
+          ? "Already on its way — the previous send is still going out."
+          : "Already sent a moment ago — not sending twice.",
+      ],
+    };
+  }
   await db.insert(auditLogs).values({
     actorType: "user",
     actorId: session.user.id,
     action: "estimate.emailed",
     entityType: "estimate",
     entityId: estimate.id,
-    newValue: { recipient: customer.email },
+    newValue: { recipient: customer.email, notificationId: queued.notificationId },
   });
   return { ok: true };
 }
@@ -237,6 +252,7 @@ export async function emailInvoice(invoiceId: string): Promise<ActionResult> {
   await enqueueEmail(db, {
     template: "invoice_issued",
     recipient: customer.email,
+    entity: { type: "invoice", id: invoice.id },
     payload: {
       firstName: customer.firstName,
       reference: invoice.number,

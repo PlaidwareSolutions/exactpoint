@@ -34,11 +34,17 @@ export {
   addWorkOrderNote,
   appointmentDetail,
   completeAppointment,
-  enqueueEmail,
-  markNotification,
-  pendingNotifications,
   technicianDayJobs,
 } from "./operations/jobs";
+export {
+  applyDeliveryEvent,
+  enqueueEmail,
+  enqueueEmailOnce,
+  latestNotificationFor,
+  markNotification,
+  pendingNotifications,
+  type EnqueueEmailInput,
+} from "./operations/notifications";
 export {
   toTstzRange,
   toEwktPoint,

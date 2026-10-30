@@ -8,7 +8,6 @@ import {
   customers,
   jobStatusHistory,
   mediaAssets,
-  notifications,
   serviceTypes,
   technicianProfiles,
   warranties,
@@ -198,44 +197,6 @@ export async function appointmentDetail(db: Database, appointmentId: string) {
     history,
     warranties: warrantyRows,
   };
-}
-
-/** Queues an email for the worker to send (spec §57 — never blocks booking). */
-export async function enqueueEmail(
-  db: Database,
-  input: { template: string; recipient: string; payload: Record<string, unknown> },
-): Promise<void> {
-  await db.insert(notifications).values({
-    channel: "email",
-    template: input.template,
-    recipient: input.recipient,
-    payload: input.payload,
-  });
-}
-
-/** Pending notifications for the worker, oldest first. */
-export async function pendingNotifications(db: Database, limit = 20) {
-  return db
-    .select()
-    .from(notifications)
-    .where(eq(notifications.status, "pending"))
-    .orderBy(asc(notifications.createdAt))
-    .limit(limit);
-}
-
-export async function markNotification(
-  db: Database,
-  id: string,
-  outcome: { ok: boolean; error?: string },
-): Promise<void> {
-  await db
-    .update(notifications)
-    .set(
-      outcome.ok
-        ? { status: "sent", sentAt: new Date(), error: null }
-        : { status: "failed", error: outcome.error?.slice(0, 500) ?? "unknown" },
-    )
-    .where(eq(notifications.id, id));
 }
 
 /** Appointments assigned to one technician for a business-day range. */

@@ -5,17 +5,33 @@ import {
   notificationStatusEnum,
 } from "./enums";
 
-export const notifications = pgTable("notifications", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  channel: notificationChannelEnum("channel").notNull(),
-  template: text("template").notNull(),
-  recipient: text("recipient").notNull(),
-  payload: jsonb("payload"),
-  status: notificationStatusEnum("status").notNull().default("pending"),
-  error: text("error"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  sentAt: timestamp("sent_at", { withTimezone: true }),
-});
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    channel: notificationChannelEnum("channel").notNull(),
+    template: text("template").notNull(),
+    recipient: text("recipient").notNull(),
+    payload: jsonb("payload"),
+    status: notificationStatusEnum("status").notNull().default("pending"),
+    error: text("error"),
+    /** What the message is about (e.g. estimate / invoice) so screens can show its delivery state. */
+    entityType: text("entity_type"),
+    entityId: text("entity_id"),
+    /** The provider's message id (Resend) — correlates delivery webhooks to this row. */
+    providerMessageId: text("provider_message_id"),
+    /** Latest provider delivery event: sent, delivery_delayed, delivered, bounced, complained, failed. */
+    deliveryStatus: text("delivery_status"),
+    deliveryDetail: text("delivery_detail"),
+    deliveryUpdatedAt: timestamp("delivery_updated_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("notifications_entity_idx").on(t.entityType, t.entityId),
+    index("notifications_provider_message_idx").on(t.providerMessageId),
+  ],
+);
 
 /**
  * Append-only record of operationally important actions (reassignments,

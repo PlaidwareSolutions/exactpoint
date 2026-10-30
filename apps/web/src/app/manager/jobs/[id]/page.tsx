@@ -4,6 +4,7 @@ import { appointmentDetail, billingForWorkOrder, getDb } from "@exactpoint/db";
 import { BUSINESS } from "@exactpoint/domain";
 import { activeTechnicians } from "@/lib/manager/queries";
 import { BillingPanel } from "./billing-panel";
+import { toBillingData } from "@/lib/manager/billing-data";
 import { RescheduleForm } from "./reschedule-form";
 import { StatusControls } from "./status-controls";
 
@@ -153,34 +154,7 @@ export default async function ManagerJobPage({
         </section>
       </div>
 
-      <BillingPanel
-        data={{
-          workOrderId: job.workOrderId,
-          estimate: billing.estimate
-            ? {
-                id: billing.estimate.id,
-                status: billing.estimate.status,
-                taxRateBps: billing.estimate.taxRateBps,
-                diagnosticFeeCents: billing.estimate.diagnosticFeeCents,
-                notes: billing.estimate.notes,
-              }
-            : null,
-          items: billing.items.map((i) => ({
-            kind: i.kind,
-            description: i.description,
-            quantity: i.quantity,
-            unitPriceCents: i.unitPriceCents,
-          })),
-          invoices: billing.invoices.map((inv) => ({
-            id: inv.id,
-            number: inv.number,
-            status: inv.status,
-            totalCents: inv.totalCents,
-            diagnosticFeeCents: inv.diagnosticFeeCents,
-            paymentMethod: inv.paymentMethod,
-          })),
-        }}
-      />
+      <BillingPanel data={toBillingData(job.workOrderId, billing)} />
 
       {!["completed", "cancelled", "customer_declined", "no_show"].includes(job.status) && (
         <RescheduleForm

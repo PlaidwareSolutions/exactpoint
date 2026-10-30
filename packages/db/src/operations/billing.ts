@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { invoiceAmountsForDecision, type LineItemKind, type PaymentMethod } from "@exactpoint/domain";
 import type { Database } from "../client";
 import { auditLogs, estimateItems, estimates, invoices } from "../schema";
+import { latestNotificationFor } from "./notifications";
 
 export interface EstimateItemInput {
   kind: LineItemKind;
@@ -170,7 +171,7 @@ export async function recordInvoicePayment(
   });
 }
 
-/** Estimate + items + invoices for a work order (job page billing panel). */
+/** Estimate + items + invoices + latest quote email for a work order (billing panel). */
 export async function billingForWorkOrder(db: Database, workOrderId: string) {
   const [estimate] = await db
     .select()
@@ -187,5 +188,13 @@ export async function billingForWorkOrder(db: Database, workOrderId: string) {
     .select()
     .from(invoices)
     .where(eq(invoices.workOrderId, workOrderId));
-  return { estimate: estimate ?? null, items, invoices: invoiceRows };
+  // Latest "Email quote" send, so the panel can show whether it was delivered.
+  const quoteEmail = estimate
+    ? await latestNotificationFor(db, {
+        entityType: "estimate",
+        entityId: estimate.id,
+        template: "quote_issued",
+      })
+    : null;
+  return { estimate: estimate ?? null, items, invoices: invoiceRows, quoteEmail };
 }

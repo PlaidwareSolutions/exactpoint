@@ -9,6 +9,7 @@ import {
   workOrders,
 } from "@exactpoint/db";
 import { BillingPanel } from "../../jobs/[id]/billing-panel";
+import { toBillingData } from "@/lib/manager/billing-data";
 
 export const metadata = { title: "Quote" };
 export const dynamic = "force-dynamic";
@@ -61,34 +62,7 @@ export default async function QuotePage({
         </p>
       </div>
 
-      <BillingPanel
-        data={{
-          workOrderId: order.id,
-          estimate: billing.estimate
-            ? {
-                id: billing.estimate.id,
-                status: billing.estimate.status,
-                taxRateBps: billing.estimate.taxRateBps,
-                diagnosticFeeCents: billing.estimate.diagnosticFeeCents,
-                notes: billing.estimate.notes,
-              }
-            : null,
-          items: billing.items.map((i) => ({
-            kind: i.kind,
-            description: i.description,
-            quantity: i.quantity,
-            unitPriceCents: i.unitPriceCents,
-          })),
-          invoices: billing.invoices.map((inv) => ({
-            id: inv.id,
-            number: inv.number,
-            status: inv.status,
-            totalCents: inv.totalCents,
-            diagnosticFeeCents: inv.diagnosticFeeCents,
-            paymentMethod: inv.paymentMethod,
-          })),
-        }}
-      />
+      <BillingPanel data={toBillingData(order.id, billing)} />
 
       <p className="rounded-xl border border-line bg-white px-4 py-3 text-sm text-slate">
         When the customer is ready to book the visit, use{" "}

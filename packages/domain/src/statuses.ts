@@ -99,6 +99,21 @@ export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 export const NOTIFICATION_STATUSES = ["pending", "sent", "failed"] as const;
 export type NotificationStatus = (typeof NOTIFICATION_STATUSES)[number];
 
+/**
+ * Provider-reported delivery events for an email (Resend webhooks), in
+ * order of precedence: a later-ranked event never gets overwritten by an
+ * earlier-ranked one that arrives late.
+ */
+export const EMAIL_DELIVERY_STATUSES = [
+  "sent",
+  "delivery_delayed",
+  "delivered",
+  "failed",
+  "bounced",
+  "complained",
+] as const;
+export type EmailDeliveryStatus = (typeof EMAIL_DELIVERY_STATUSES)[number];
+
 export const AUDIT_ACTOR_TYPES = ["user", "system", "customer"] as const;
 export type AuditActorType = (typeof AUDIT_ACTOR_TYPES)[number];
 

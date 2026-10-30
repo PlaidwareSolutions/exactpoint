@@ -270,7 +270,7 @@
     <p>Two ways in: open any job and find <strong>Quote &amp; invoice</strong> — or, for a customer who wants a price <em>before</em> booking a visit, open their page (Customers or search) and tap <span class="btn-name">Create quote</span>. Either way, the same builder:</p>
     <ol class="steps">
       <li>Add lines — a part, labor, anything — with quantity and price. Subtotal, tax (8.25% unless you change it), and total calculate live. <span class="btn-name">Save quote</span>.</li>
-      <li>Tap <span class="btn-name">Email quote to customer</span> to send it — with the fee-waiver promise spelled out — or present it in person. Then record their answer: <span class="btn-name">Customer approved</span> or <span class="btn-name">Customer declined</span>.</li>
+      <li>Tap <span class="btn-name">Email quote to customer</span> to send it — with the fee-waiver promise spelled out — or present it in person. A status chip appears under the buttons and updates on its own: <strong>Sending…</strong>, then <strong>Sent — awaiting delivery confirmation</strong>, then <strong>Delivered</strong> once their mail server has accepted it (usually within a minute). <strong>Bounced</strong> means the address rejected it — fix the email on the customer's page, then tap <span class="btn-name">Resend quote</span>. The button is safe to tap more than once: it never sends the same quote twice within a minute. Then record their answer: <span class="btn-name">Customer approved</span> or <span class="btn-name">Customer declined</span>.</li>
       <li>The invoice writes itself: <strong>approved</strong> → quote + tax, $80 fee waived. <strong>Declined</strong> → an invoice for exactly the $80 diagnostic fee. Every invoice gets a number like <strong>INV-1017</strong>.</li>
       <li>To collect: open the invoice number and tap <span class="btn-name">Email invoice to customer</span> — they receive the full breakdown with the total due and your payment methods. Tap <span class="btn-name">Print / Save PDF</span> on the same page for a paper or PDF copy with your logo.</li>
       <li>When they pay, tap <span class="btn-name">Paid by zelle</span> / <span class="btn-name">cash</span> / <span class="btn-name">check</span>. A receipt email goes out, and the invoice is marked paid.</li>
@@ -324,10 +324,12 @@
       <tr><td>They book online</td><td>"Request received" with their EP-number and the fee policy</td></tr>
       <tr><td>You assign a technician</td><td>"Appointment confirmed" with the day and window</td></tr>
       <tr><td>The job is completed</td><td>"Your repair is complete" with the warranty note</td></tr>
+      <tr><td>You tap Email quote to customer</td><td>"Your quote" with every line, the total, and the fee-waiver promise</td></tr>
+      <tr><td>You tap Email invoice to customer</td><td>The invoice breakdown, total due, and your payment methods</td></tr>
       <tr><td>You record a payment</td><td>A receipt with the invoice number and amount</td></tr>
       <tr><td>Someone requests a password reset</td><td>The reset link (team accounts only)</td></tr>
     </table></div>
-    <p>All are sent from <strong>no-reply@exactpointrepairs.com</strong>, and when a customer hits reply, it goes to <strong>info@exactpointrepairs.com</strong> — which lands in your inbox. You never have to send these yourself.</p>
+    <p>All are sent from <strong>no-reply@exactpointrepairs.com</strong>, and when a customer hits reply, it goes to <strong>info@exactpointrepairs.com</strong> — which lands in your inbox. You never have to send these yourself. For quotes, the <strong>Quote &amp; invoice</strong> panel also tells you what happened to the email — delivered, delayed, bounced, or marked as spam — so you never have to wonder whether it arrived.</p>
   </section>
 
   <section class="chapter" id="statuses">
@@ -364,6 +366,6 @@
 
   <footer>
     ExactPoint Appliance &amp; HVAC Services · exactpointrepairs.com · 281-915-8264<br>
-    Handbook edition: August 2026. Licensed, registered &amp; insured · 10+ years of experience.
+    Handbook edition: October 2026. Licensed, registered &amp; insured · 10+ years of experience.
   </footer>
 </div>
