@@ -112,10 +112,22 @@ export function BookingForm({
   async function checkAddress() {
     setBusy(true);
     setError(null);
+    try {
+      await checkAddressAndLoadWindows();
+    } catch (err) {
+      console.error("[booking] address step failed", err);
+      setError(
+        `Something went wrong checking your address. Please try again, or call us at ${BUSINESS.phone}.`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function checkAddressAndLoadWindows() {
     const result = await validateBookingAddress({ street, unit, city, state: "TX", zip });
     setAddressCheck(result);
     if (!result.ok) {
-      setBusy(false);
       setError(result.message ?? "We could not confirm this address. Please review it.");
       return;
     }
@@ -132,7 +144,6 @@ export function BookingForm({
     }
     setPicked([]);
     setHold(null);
-    setBusy(false);
     next();
   }
 
@@ -158,8 +169,14 @@ export function BookingForm({
     if (engineBacked && selected?.slotToken) {
       setBusy(true);
       setError(null);
-      const placed = await holdSelectedSlot(selected.slotToken);
-      setBusy(false);
+      let placed: Awaited<ReturnType<typeof holdSelectedSlot>> = null;
+      try {
+        placed = await holdSelectedSlot(selected.slotToken);
+      } catch (err) {
+        console.error("[booking] hold failed", err);
+      } finally {
+        setBusy(false);
+      }
       if (!placed) {
         setError("That window was just taken. Please pick another.");
         const offered = await getBookingWindows({
@@ -182,6 +199,19 @@ export function BookingForm({
   async function submit() {
     setBusy(true);
     setError(null);
+    try {
+      await sendBooking();
+    } catch (err) {
+      console.error("[booking] submit failed", err);
+      setError(
+        `Your request could not be sent. Please try again, or call us at ${BUSINESS.phone}.`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendBooking() {
     const result = await submitBooking({
       serviceTypeSlug: service,
       serviceOther,
@@ -204,7 +234,6 @@ export function BookingForm({
       photoAssetIds: photos.map((p) => p.id),
       company: honeypotRef.current?.value ?? "",
     });
-    setBusy(false);
     if (result.ok) {
       setScheduled(result.scheduled);
       setReference(result.reference);

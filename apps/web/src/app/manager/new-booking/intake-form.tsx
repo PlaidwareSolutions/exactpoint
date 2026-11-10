@@ -42,9 +42,14 @@ export function IntakeForm({
   async function lookup() {
     if (phone.trim().length < 7) return;
     setBusy(true);
-    const found = await findCustomerByPhone(phone);
-    setMatches(found);
-    setBusy(false);
+    try {
+      setMatches(await findCustomerByPhone(phone));
+    } catch (err) {
+      console.error("[intake] lookup failed", err);
+      setError("Customer lookup failed. Try again, or continue as a new customer.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function useCustomer(match: CustomerMatch) {
@@ -59,13 +64,22 @@ export function IntakeForm({
   async function submit() {
     setBusy(true);
     setError(null);
+    try {
+      await save();
+    } catch (err) {
+      console.error("[intake] save failed", err);
+      setError("Saving failed — nothing was saved. Check your connection and try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
+  async function save() {
     let addressPayload: AddressCheck | null = addressNote;
     if (!existingAddressId && !addressPayload?.ok) {
       addressPayload = await checkIntakeAddress({ street, unit, city, state: "TX", zip });
       setAddressNote(addressPayload);
       if (!addressPayload.ok) {
-        setBusy(false);
         setError(addressPayload.message ?? "Address could not be confirmed.");
         return;
       }
@@ -84,7 +98,6 @@ export function IntakeForm({
       urgency: urgent ? "emergency" : "normal",
       address: existingAddressId ? undefined : { street, unit, city, state: "TX", zip },
     });
-    setBusy(false);
     if (result.ok) {
       router.push(`/manager/requests/${result.requestId}`);
     } else {

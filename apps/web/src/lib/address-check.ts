@@ -7,6 +7,8 @@ import { addressInputSchema } from "@/lib/booking/schema";
 
 export interface AddressCheck {
   ok: boolean;
+  /** The validation provider failed (outage), as opposed to a bad address. */
+  unavailable?: boolean;
   confidence?: ValidatedAddress["confidence"];
   standardized?: { street: string; unit?: string; city: string; state: string; zip: string };
   zoneName?: string | null;
@@ -26,7 +28,21 @@ export async function checkAddress(input: unknown): Promise<AddressCheck> {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the address fields." };
   }
 
-  const validated = await addressProvider.validate(parsed.data);
+  // A vendor outage (e.g. Google 403 when billing lapses) must surface as a
+  // clear, recoverable message, never as an unhandled throw that leaves the
+  // caller's form stuck on "Saving…".
+  let validated: ValidatedAddress;
+  try {
+    validated = await addressProvider.validate(parsed.data);
+  } catch (err) {
+    console.error("[address-check] address validation unavailable", err);
+    return {
+      ok: false,
+      unavailable: true,
+      message:
+        "The address check is temporarily unavailable. Nothing was saved — please try again in a few minutes.",
+    };
+  }
   if (validated.confidence === "unresolved") {
     return {
       ok: false,

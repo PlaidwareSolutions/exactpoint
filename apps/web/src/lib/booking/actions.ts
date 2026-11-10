@@ -41,7 +41,14 @@ export async function validateBookingAddress(input: unknown): Promise<AddressChe
   if (!rateLimit(`addr:${await clientIp()}`, 30, 60 * 60 * 1000)) {
     return { ok: false, message: "Too many attempts. Please try again shortly." };
   }
-  return checkAddress(input);
+  const result = await checkAddress(input);
+  if (result.unavailable) {
+    return {
+      ...result,
+      message: `We can't check addresses right now. Please try again in a few minutes, or call us at ${BUSINESS.phone} to book.`,
+    };
+  }
+  return result;
 }
 
 export interface OfferedSlotsResult {
@@ -115,7 +122,16 @@ export async function submitBooking(input: unknown): Promise<SubmitResult> {
     return { ok: true, reference: "EP-0000", scheduled: false };
   }
 
-  const validated = await addressProvider.validate(data.address);
+  let validated: Awaited<ReturnType<typeof addressProvider.validate>>;
+  try {
+    validated = await addressProvider.validate(data.address);
+  } catch (err) {
+    console.error("[booking] address validation unavailable at submit", err);
+    return {
+      ok: false,
+      error: `We can't check addresses right now, so your request wasn't sent. Please try again in a few minutes, or call us at ${BUSINESS.phone} to book.`,
+    };
+  }
   if (validated.confidence === "unresolved") {
     return { ok: false, error: "We could not confirm this address. Please review it." };
   }
