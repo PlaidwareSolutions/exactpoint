@@ -8,7 +8,14 @@ import {
   invoiceLedger,
   workOrders,
 } from "@exactpoint/db";
-import { BUSINESS, INVOICE_STATUS_LABELS, PAYMENT_METHOD_LABELS, formatCents } from "@exactpoint/domain";
+import {
+  BUSINESS,
+  INVOICE_STATUS_LABELS,
+  PAYMENT_METHOD_LABELS,
+  SERVICE_AGREEMENT,
+  SERVICE_AGREEMENT_URL,
+  formatCents,
+} from "@exactpoint/domain";
 import { LogoBadge } from "@/components/brand/logo";
 import { PaymentLedger, STATUS_TONE } from "@/components/billing/payment-ledger";
 import { toLedgerInvoice } from "@/lib/manager/billing-data";
@@ -196,6 +203,10 @@ export default async function InvoicePage({
           Payment accepted by {BUSINESS.paymentMethods.join(", ")}. Repairs carry a{" "}
           {BUSINESS.laborWarrantyMonths}-month labor warranty on the specific work
           performed. Thank you for choosing {BUSINESS.shortName}.
+        </p>
+        <p className="mt-2 text-xs text-slate">
+          Service provided under our {SERVICE_AGREEMENT.title}:{" "}
+          <span className="font-semibold text-navy">{SERVICE_AGREEMENT_URL.replace("https://", "")}</span>
         </p>
       </div>
 

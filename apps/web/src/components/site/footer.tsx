@@ -58,6 +58,7 @@ export function SiteFooter() {
             <li><Link href="/book" className="hover:text-point">Book Service</Link></li>
             <li><Link href="/service-areas" className="hover:text-point">Service Areas</Link></li>
             <li><Link href="/policies/service-warranty" className="hover:text-point">Service &amp; Warranty Policy</Link></li>
+            <li><Link href="/policies/service-agreement" className="hover:text-point">Customer Agreement</Link></li>
             <li><Link href="/policies/privacy" className="hover:text-point">Privacy Policy</Link></li>
             <li>
               <Link href="/login" className="text-white/60 hover:text-point">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { BUSINESS } from "@exactpoint/domain";
+import { BUSINESS, SERVICE_AGREEMENT } from "@exactpoint/domain";
 import {
   getBookingWindows,
   holdSelectedSlot,
@@ -580,6 +580,16 @@ export function BookingForm({
                 An $80 diagnostic/service-call fee applies if we diagnose the
                 problem and you choose not to proceed with the recommended
                 repair. If you approve the quoted repair, the fee is waived.
+                Repairs you approve are covered by our{" "}
+                <a
+                  href={SERVICE_AGREEMENT.path}
+                  target="_blank"
+                  rel="noopener"
+                  className="font-semibold text-point underline"
+                >
+                  customer agreement
+                </a>
+                .
               </p>
               <label className="mt-3 flex items-start gap-2.5 text-sm font-semibold text-navy">
                 <input

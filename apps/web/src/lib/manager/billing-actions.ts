@@ -27,6 +27,9 @@ import {
   PAYMENT_KINDS,
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABELS,
+  SERVICE_AGREEMENT,
+  SERVICE_AGREEMENT_URL,
+  serviceAgreementText,
   subtotalCents,
   taxCents,
 } from "@exactpoint/domain";
@@ -218,6 +221,10 @@ export async function emailQuote(estimateId: string): Promise<ActionResult> {
         `Quoted total: ${money(subtotal + tax)}`,
         ...(revision.notes ? ["", `Notes: ${revision.notes}`] : []),
       ].join("\n"),
+      // The exact terms sent are stored on the notification row, so the
+      // record shows what the customer agreed to when they approved.
+      agreementVersion: SERVICE_AGREEMENT.version,
+      agreementText: serviceAgreementText(),
     },
   });
   if (!queued.queued) {
@@ -241,6 +248,7 @@ export async function emailQuote(estimateId: string): Promise<ActionResult> {
       revision: revision.revision,
       kind: revision.kind,
       notificationId: queued.notificationId,
+      agreementVersion: SERVICE_AGREEMENT.version,
     },
   });
   return { ok: true };
@@ -294,6 +302,7 @@ export async function emailInvoice(invoiceId: string): Promise<ActionResult> {
       linesText: lines.join("\n"),
       totalsText: totals.join("\n"),
       paymentMethods: BUSINESS.paymentMethods.join(", "),
+      agreementUrl: SERVICE_AGREEMENT_URL,
     },
   });
   await db.insert(auditLogs).values({

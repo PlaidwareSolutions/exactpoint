@@ -1,7 +1,13 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { customerAddresses, customers, getDb, paymentReceipt, workOrders } from "@exactpoint/db";
-import { BUSINESS, PAYMENT_METHOD_LABELS, formatCents } from "@exactpoint/domain";
+import {
+  BUSINESS,
+  PAYMENT_METHOD_LABELS,
+  SERVICE_AGREEMENT,
+  SERVICE_AGREEMENT_URL,
+  formatCents,
+} from "@exactpoint/domain";
 import { LogoBadge } from "@/components/brand/logo";
 import { ReceiptActions } from "./receipt-actions";
 
@@ -124,6 +130,10 @@ export default async function ReceiptPage({
             ? `Repairs carry a ${BUSINESS.laborWarrantyMonths}-month labor warranty on the specific work performed. `
             : `The remaining balance can be settled by ${BUSINESS.paymentMethods.join(", ")}. `}
           Thank you for choosing {BUSINESS.shortName}.
+        </p>
+        <p className="mt-2 text-xs text-slate">
+          Service provided under our {SERVICE_AGREEMENT.title}:{" "}
+          <span className="font-semibold text-navy">{SERVICE_AGREEMENT_URL.replace("https://", "")}</span>
         </p>
       </div>
     </>

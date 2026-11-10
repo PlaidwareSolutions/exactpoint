@@ -29,6 +29,13 @@
       "when": 1793380501457,
       "tag": "0003_billing_ledger_revisions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794282597158,
+      "tag": "0004_legal_name_llc",
+      "breakpoints": true
     }
   ]
 }

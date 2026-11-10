@@ -4,7 +4,8 @@
  * (years in business, ratings, licenses, 24/7 availability, etc.).
  */
 export const BUSINESS = {
-  legalName: "ExactPoint Appliance & HVAC Services",
+  /** Owner-supplied 2026-11-04 (registered LLC name, from his service agreement). */
+  legalName: "ExactPoint Appliance & HVAC Repair Services LLC",
   displayName: "ExactPoint Appliance & HVAC",
   shortName: "ExactPoint",
   domain: "exactpointrepairs.com",

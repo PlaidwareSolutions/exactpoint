@@ -112,6 +112,16 @@ export function renderEmail(
           "",
           "Completed repairs carry a two-month labor warranty on the specific work performed.",
           `— ${business.displayName}`,
+          // Owner's service agreement: approving the quote accepts these terms.
+          ...(str(payload, "agreementText")
+            ? [
+                "",
+                "────────────────────────────────────────",
+                "By approving this quote you agree to the terms below.",
+                "",
+                str(payload, "agreementText"),
+              ]
+            : []),
         ].join("\n"),
       };
     }
@@ -132,6 +142,9 @@ export function renderEmail(
           `Questions or ready to pay? Call ${business.phone}.`,
           "",
           "Completed repairs carry a two-month labor warranty on the specific work performed.",
+          ...(str(payload, "agreementUrl")
+            ? [`Service provided under our Service Authorization & Customer Agreement: ${str(payload, "agreementUrl")}`]
+            : []),
           `— ${business.displayName}`,
         ].join("\n"),
       };

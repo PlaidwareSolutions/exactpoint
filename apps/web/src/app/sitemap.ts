@@ -14,6 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/contact",
     "/book",
     "/policies/service-warranty",
+    "/policies/service-agreement",
     "/policies/privacy",
   ];
   return [

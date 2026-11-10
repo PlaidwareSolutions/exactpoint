@@ -1,4 +1,4 @@
-import { BUSINESS } from "@exactpoint/domain";
+import { BUSINESS, SERVICE_AGREEMENT } from "@exactpoint/domain";
 
 export const metadata = {
   title: "Service & Warranty Policy",
@@ -46,6 +46,16 @@ export default function ServiceWarrantyPage() {
           whether it qualifies.
         </p>
       </div>
+
+      <h2 className="mt-8 text-xl font-bold text-navy">Customer agreement</h2>
+      <p className="mt-3 text-slate">
+        Every quote we send includes our{" "}
+        <a href={SERVICE_AGREEMENT.path} className="font-semibold text-point">
+          {SERVICE_AGREEMENT.title}
+        </a>
+        . Approving a quote means you accept those terms, including repair scope,
+        post-repair inspection and refunds.
+      </p>
 
       <h2 className="mt-8 text-xl font-bold text-navy">Payments</h2>
       <p className="mt-3 text-slate">

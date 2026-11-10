@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BUSINESS, formatCents, subtotalCents, taxCents } from "@exactpoint/domain";
+import { BUSINESS, SERVICE_AGREEMENT, formatCents, subtotalCents, taxCents } from "@exactpoint/domain";
 import type { EmailDeliveryStatus, NotificationStatus } from "@exactpoint/domain";
 import { decideEstimateAction, emailQuote, saveEstimate } from "@/lib/manager/billing-actions";
 import { PaymentLedger, type LedgerInvoice } from "@/components/billing/payment-ledger";
@@ -401,7 +401,12 @@ export function BillingPanel({ data }: { data: BillingData }) {
               <>
                 Approved → the ${(current?.diagnosticFeeCents ?? 8000) / 100} diagnostic fee is waived and the
                 invoice covers the quote. Declined → the invoice is the diagnostic fee only. Every save is a
-                new revision — the customer should get the latest one, so re-send after changes.
+                new revision — the customer should get the latest one, so re-send after changes. The quote
+                email includes your{" "}
+                <a href={SERVICE_AGREEMENT.path} target="_blank" rel="noopener" className="font-semibold text-point">
+                  customer agreement
+                </a>
+                ; approving the quote accepts it.
               </>
             )}
           </p>
